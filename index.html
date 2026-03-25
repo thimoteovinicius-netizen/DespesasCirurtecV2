@@ -198,8 +198,7 @@ function addDespesa(){
 }
 
 function finalizar(){
-  const ad=Number(adiantamento.value);
-  if(!ad) return alert("Informe o adiantamento");
+  const ad = Number(adiantamento.value) || 0;
 
   const {jsPDF}=window.jspdf;
   const pdf=new jsPDF();
@@ -243,10 +242,15 @@ function finalizar(){
     y+=3;
   }
 
-  pdf.text(`Adiantamento: R$ ${ad.toFixed(2)}`,10,y);y+=5;
+  y+=3;
+  pdf.text(`Saldo inicial: R$ ${ad.toFixed(2)}`,10,y);y+=5;
   pdf.text(`Total gasto: R$ ${total.toFixed(2)}`,10,y);y+=5;
+
   const saldo=ad-total;
-  pdf.text(`Saldo final: R$ ${saldo.toFixed(2)} ${saldo<0?"(NEGATIVO)":"(RESTANTE)"}`,10,y);
+  pdf.text(
+    `Saldo final: R$ ${saldo.toFixed(2)} ${saldo<0?"(NEGATIVO - REEMBOLSO)":"(RESTANTE)"}`,
+    10,y
+  );
 
   if(observacoes.value){
     y+=8;
