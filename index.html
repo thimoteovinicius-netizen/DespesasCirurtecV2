@@ -42,9 +42,11 @@ button{background:#1976d2;color:#fff;border:none;border-radius:6px}
 
 <div class="card">
   <label>Data início</label>
-  <input type="date" id="dataInicio">
+  <input type="datetime-local" id="dataInicio">
+
   <label>Data final</label>
-  <input type="date" id="dataFim">
+  <input type="datetime-local" id="dataFim">
+
   <input type="number" id="adiantamento" placeholder="Valor do adiantamento (R$)">
 </div>
 
@@ -112,6 +114,13 @@ button{background:#1976d2;color:#fff;border:none;border-radius:6px}
 
 <script>
 let despesas=[], anexos=[];
+
+function formatarDataHora(dt){
+  if(!dt) return "";
+  const [data, hora] = dt.split("T");
+  const [y,m,d] = data.split("-");
+  return `${d}/${m}/${y} ${hora}`;
+}
 
 function addParada(){
   const d=document.createElement("div");
@@ -198,7 +207,7 @@ function addDespesa(){
 }
 
 function finalizar(){
-  const ad = Number(adiantamento.value) || 0;
+  const ad=Number(adiantamento.value)||0;
 
   const {jsPDF}=window.jspdf;
   const pdf=new jsPDF();
@@ -210,8 +219,8 @@ function finalizar(){
   pdf.setFontSize(10);
   pdf.text(`Técnico: ${nome.value}`,10,y);y+=5;
   pdf.text(`E-mail: ${email.value}`,10,y);y+=5;
-  pdf.text(`Data início: ${dataInicio.value}`,10,y);y+=5;
-  pdf.text(`Data final: ${dataFim.value}`,10,y);y+=8;
+  pdf.text(`Data início: ${formatarDataHora(dataInicio.value)}`,10,y);y+=5;
+  pdf.text(`Data final: ${formatarDataHora(dataFim.value)}`,10,y);y+=8;
 
   pdf.text("Trajeto",10,y);y+=5;
   pdf.text(`Origem: ${origem.value}`,10,y);y+=5;
@@ -233,24 +242,16 @@ function finalizar(){
   for(const cat in porCategoria){
     pdf.text(cat,10,y);y+=5;
     porCategoria[cat].forEach(d=>{
-      pdf.text(
-        `${d.detalhe||""} | Qtd: ${d.quantidade} | Valor: R$ ${d.valorTotal.toFixed(2)}`,
-        12,y
-      );
+      pdf.text(`${d.detalhe||""} | Qtd: ${d.quantidade} | Valor: R$ ${d.valorTotal.toFixed(2)}`,12,y);
       y+=5;
     });
     y+=3;
   }
 
-  y+=3;
-  pdf.text(`Saldo inicial: R$ ${ad.toFixed(2)}`,10,y);y+=5;
+  pdf.text(`Adiantamento: R$ ${ad.toFixed(2)}`,10,y);y+=5;
   pdf.text(`Total gasto: R$ ${total.toFixed(2)}`,10,y);y+=5;
-
   const saldo=ad-total;
-  pdf.text(
-    `Saldo final: R$ ${saldo.toFixed(2)} ${saldo<0?"(NEGATIVO - REEMBOLSO)":"(RESTANTE)"}`,
-    10,y
-  );
+  pdf.text(`Saldo final: R$ ${saldo.toFixed(2)} ${saldo<0?"(NEGATIVO)":"(RESTANTE)"}`,10,y);
 
   if(observacoes.value){
     y+=8;
