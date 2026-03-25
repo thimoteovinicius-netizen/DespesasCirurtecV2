@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -24,10 +24,10 @@ button{background:#1976d2;color:#fff;border:none;border-radius:6px}
 
 <body>
 
-<!-- LOGO + TÍTULO -->
+<!-- LOGO NO APP -->
 <div style="text-align:center;margin-bottom:15px;">
-  <img src="1000644584.png" style="max-width:160px;display:block;margin:auto;">
-  <h1 style="margin-top:5px;">Despesas Cirurtec</h1>
+  <img id="logoApp" src="1000644584.png" style="max-width:160px;">
+  <h1>Despesas Cirurtec</h1>
 </div>
 
 <datalist id="cidades-mg">
@@ -48,10 +48,8 @@ button{background:#1976d2;color:#fff;border:none;border-radius:6px}
 <div class="card">
   <label>Data início</label>
   <input type="datetime-local" id="dataInicio">
-
   <label>Data final</label>
   <input type="datetime-local" id="dataFim">
-
   <input type="number" id="adiantamento" placeholder="Valor do adiantamento (R$)">
 </div>
 
@@ -118,13 +116,42 @@ button{background:#1976d2;color:#fff;border:none;border-radius:6px}
 </div>
 
 <script>
-let despesas=[], anexos=[];
+let despesas=[], anexos=[], logoBase64="";
+
+/* ===== CONVERTER LOGO PARA BASE64 ===== */
+window.onload = ()=>{
+  const img = document.getElementById("logoApp");
+  fetch(img.src)
+    .then(res=>res.blob())
+    .then(blob=>{
+      const r = new FileReader();
+      r.onload = e=> logoBase64 = e.target.result;
+      r.readAsDataURL(blob);
+    });
+};
 
 function formatarDataHora(dt){
   if(!dt) return "";
   const [data, hora] = dt.split("T");
   const [y,m,d] = data.split("-");
   return `${d}/${m}/${y} ${hora}`;
+}
+
+/* ===== CABEÇALHO PDF ===== */
+function cabecalhoPDF(pdf){
+  let y=10;
+
+  if(logoBase64){
+    pdf.addImage(logoBase64,"PNG",10,y,30,15);
+  }
+
+  pdf.setFontSize(12);
+  pdf.text("Cirurtec Hospitalar LTDA",50,y+5);
+
+  pdf.setFontSize(10);
+  pdf.text("Acerto de viagem de funcionário",50,y+12);
+
+  return 30;
 }
 
 function addParada(){
@@ -154,7 +181,7 @@ function renderAnexos(){
     listaAnexos.innerHTML+=`
       <div class="anexo">
         <img src="${a.img}" width="100%">
-        <textarea placeholder="Descrição da imagem (opcional)"
+        <textarea placeholder="Descrição da imagem"
           oninput="anexos[${i}].desc=this.value"></textarea>
       </div>`;
   });
@@ -204,7 +231,6 @@ function addDespesa(){
     categoria:categoria.value,
     detalhe:sub.value||outros.value||"",
     quantidade:Number(qtd.value)||1,
-    valorUnitario:Number(valor.value)/(Number(qtd.value)||1),
     valorTotal:Number(valor.value)
   });
 
@@ -220,65 +246,29 @@ function renderDespesas(){
     lista.innerHTML+=`
       <div class="despesa">
         ${d.categoria} – R$ ${d.valorTotal.toFixed(2)}
-        <button class="btn-sec" onclick="editarDespesa(${i})">✏️ Editar</button>
-        <button class="btn-del" onclick="removerDespesa(${i})">❌ Excluir</button>
-      </div>
-    `;
+        <button onclick="removerDespesa(${i})">❌</button>
+      </div>`;
   });
 }
 
 function removerDespesa(i){
-  if(confirm("Excluir despesa?")){
-    despesas.splice(i,1);
-    renderDespesas();
-  }
-}
-
-function editarDespesa(i){
-  const d=despesas[i];
-
-  categoria.value=d.categoria;
-  controleCategoria();
-
-  if(d.categoria==="Alimentação"){
-    sub.value=d.detalhe;
-    qtd.value=d.quantidade;
-  } else if(d.categoria==="Outros"){
-    outros.value=d.detalhe;
-    valor.value=d.valorTotal;
-  } else if(["Bônus de viagem","Veículo próprio"].includes(d.categoria)){
-    qtd.value=d.quantidade;
-  } else {
-    valor.value=d.valorTotal;
-  }
-
   despesas.splice(i,1);
   renderDespesas();
 }
 
+/* ===== GERAR PDF ===== */
 function finalizar(){
   const ad=Number(adiantamento.value)||0;
 
   const {jsPDF}=window.jspdf;
   const pdf=new jsPDF();
-  let y=10,total=0;
 
-  pdf.setFontSize(12);
-  pdf.text("Cirurtec Hospitalar LTDA",10,y);y+=8;
+  let y=cabecalhoPDF(pdf);
+  let total=0;
 
   pdf.setFontSize(10);
   pdf.text(`Técnico: ${nome.value}`,10,y);y+=5;
-  pdf.text(`E-mail: ${email.value}`,10,y);y+=5;
-  pdf.text(`Data início: ${formatarDataHora(dataInicio.value)}`,10,y);y+=5;
-  pdf.text(`Data final: ${formatarDataHora(dataFim.value)}`,10,y);y+=8;
-
-  pdf.text("Trajeto",10,y);y+=5;
-  pdf.text(`Origem: ${origem.value}`,10,y);y+=5;
-  [...paradas.children].forEach((p,i)=>{
-    pdf.text(`Parada ${i+1}: ${p.querySelector("input").value}`,10,y);
-    y+=5;
-  });
-  pdf.text(`Destino: ${destino.value}`,10,y);y+=8;
+  pdf.text(`Período: ${formatarDataHora(dataInicio.value)} a ${formatarDataHora(dataFim.value)}`,10,y);y+=8;
 
   const porCategoria={};
   despesas.forEach(d=>{
@@ -292,25 +282,21 @@ function finalizar(){
   for(const cat in porCategoria){
     pdf.text(cat,10,y);y+=5;
     porCategoria[cat].forEach(d=>{
-      pdf.text(`${d.detalhe||""} | Qtd: ${d.quantidade} | Valor: R$ ${d.valorTotal.toFixed(2)}`,12,y);
+      pdf.text(`${d.detalhe||""} | Qtd: ${d.quantidade} | R$ ${d.valorTotal.toFixed(2)}`,12,y);
       y+=5;
     });
-    y+=3;
   }
 
+  y+=5;
   pdf.text(`Adiantamento: R$ ${ad.toFixed(2)}`,10,y);y+=5;
-  pdf.text(`Total gasto: R$ ${total.toFixed(2)}`,10,y);y+=5;
-  const saldo=ad-total;
-  pdf.text(`Saldo final: R$ ${saldo.toFixed(2)} ${saldo<0?"(NEGATIVO)":"(RESTANTE)"}`,10,y);
+  pdf.text(`Total: R$ ${total.toFixed(2)}`,10,y);y+=5;
 
-  if(observacoes.value){
-    y+=8;
-    pdf.text("Observações:",10,y);y+=5;
-    pdf.text(observacoes.value,10,y,{maxWidth:190});
-  }
+  const saldo=ad-total;
+  pdf.text(`Saldo: R$ ${saldo.toFixed(2)} ${saldo<0?"(NEGATIVO)":"(RESTANTE)"}`,10,y);
 
   if(anexos.length){
-    pdf.addPage();y=10;
+    pdf.addPage();
+    y=10;
     anexos.forEach(a=>{
       if(y>220){pdf.addPage();y=10}
       pdf.addImage(a.img,"JPEG",10,y,80,60);
