@@ -15,6 +15,7 @@ input,select,button,textarea{width:100%;padding:10px;margin-top:8px}
 textarea{resize:none}
 button{background:#1976d2;color:#fff;border:none;border-radius:6px}
 .btn-sec{background:#455a64}
+.btn-del{background:#c62828}
 .hidden{display:none}
 .despesa{border-top:1px solid #ddd;margin-top:6px;padding-top:6px}
 .anexo{border:1px solid #ccc;padding:8px;margin-top:8px;border-radius:6px}
@@ -105,7 +106,7 @@ button{background:#1976d2;color:#fff;border:none;border-radius:6px}
 
 <div class="card">
   <h3>Observações</h3>
-  <textarea id="observacoes" maxlength="500" placeholder="Observações gerais (até 500 caracteres)"></textarea>
+  <textarea id="observacoes" maxlength="500"></textarea>
 </div>
 
 <div class="card">
@@ -192,8 +193,10 @@ function calcularValor(){
   if(categoria.value==="Veículo próprio"&&q) valor.value=(1.28*q).toFixed(2);
 }
 
+/* NOVO SISTEMA COM EDIÇÃO */
 function addDespesa(){
   if(!categoria.value||!valor.value) return alert("Dados incompletos");
+
   despesas.push({
     categoria:categoria.value,
     detalhe:sub.value||outros.value||"",
@@ -201,9 +204,55 @@ function addDespesa(){
     valorUnitario:Number(valor.value)/(Number(qtd.value)||1),
     valorTotal:Number(valor.value)
   });
-  lista.innerHTML+=`<div class="despesa">${categoria.value} – R$ ${valor.value}</div>`;
+
+  renderDespesas();
+
   categoria.value=sub.value=qtd.value=outros.value=valor.value="";
   controleCategoria();
+}
+
+function renderDespesas(){
+  lista.innerHTML="";
+
+  despesas.forEach((d,i)=>{
+    lista.innerHTML+=`
+      <div class="despesa">
+        ${d.categoria} – R$ ${d.valorTotal.toFixed(2)}
+
+        <button class="btn-sec" onclick="editarDespesa(${i})">✏️ Editar</button>
+        <button class="btn-del" onclick="removerDespesa(${i})">❌ Excluir</button>
+      </div>
+    `;
+  });
+}
+
+function removerDespesa(i){
+  if(confirm("Excluir despesa?")){
+    despesas.splice(i,1);
+    renderDespesas();
+  }
+}
+
+function editarDespesa(i){
+  const d=despesas[i];
+
+  categoria.value=d.categoria;
+  controleCategoria();
+
+  if(d.categoria==="Alimentação"){
+    sub.value=d.detalhe;
+    qtd.value=d.quantidade;
+  } else if(d.categoria==="Outros"){
+    outros.value=d.detalhe;
+    valor.value=d.valorTotal;
+  } else if(["Bônus de viagem","Veículo próprio"].includes(d.categoria)){
+    qtd.value=d.quantidade;
+  } else {
+    valor.value=d.valorTotal;
+  }
+
+  despesas.splice(i,1);
+  renderDespesas();
 }
 
 function finalizar(){
