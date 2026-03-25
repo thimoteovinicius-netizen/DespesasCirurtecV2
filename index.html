@@ -1,4 +1,123 @@
- <script>
+ <!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Despesas Cirurtec</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+body{font-family:Arial;background:#f4f4f4;padding:15px}
+h1{text-align:center}
+.card{background:#fff;padding:15px;border-radius:8px;margin-bottom:15px}
+input,select,button,textarea{width:100%;padding:10px;margin-top:8px}
+textarea{resize:none}
+button{background:#1976d2;color:#fff;border:none;border-radius:6px}
+.btn-sec{background:#455a64}
+.btn-del{background:#c62828}
+.hidden{display:none}
+.despesa{border-top:1px solid #ddd;margin-top:6px;padding-top:6px}
+.anexo{border:1px solid #ccc;padding:8px;margin-top:8px;border-radius:6px}
+</style>
+</head>
+
+<body>
+
+<!-- LOGO + TÍTULO -->
+<div style="text-align:center;margin-bottom:15px;">
+  <img src="1000644584.png" style="max-width:160px;display:block;margin:auto;">
+  <h1 style="margin-top:5px;">Despesas Cirurtec</h1>
+</div>
+
+<datalist id="cidades-mg">
+  <option value="Belo Horizonte - MG">
+  <option value="Uberlândia - MG">
+  <option value="Uberaba - MG">
+  <option value="Juiz de Fora - MG">
+  <option value="Divinópolis - MG">
+  <option value="Sete Lagoas - MG">
+  <option value="Montes Claros - MG">
+</datalist>
+
+<div class="card">
+  <input id="nome" placeholder="Nome do técnico">
+  <input id="email" placeholder="E-mail">
+</div>
+
+<div class="card">
+  <label>Data início</label>
+  <input type="datetime-local" id="dataInicio">
+
+  <label>Data final</label>
+  <input type="datetime-local" id="dataFim">
+
+  <input type="number" id="adiantamento" placeholder="Valor do adiantamento (R$)">
+</div>
+
+<div class="card">
+  <h3>Trajeto</h3>
+  <input list="cidades-mg" id="origem" placeholder="Ponto inicial">
+  <button class="btn-sec" onclick="addParada()">➕ Adicionar parada</button>
+  <div id="paradas"></div>
+  <input list="cidades-mg" id="destino" placeholder="Destino final">
+</div>
+
+<div class="card">
+  <h3>Nova despesa</h3>
+
+  <select id="categoria" onchange="controleCategoria()">
+    <option value="">Categoria</option>
+    <option>Alimentação</option>
+    <option>Bônus de viagem</option>
+    <option>Veículo próprio</option>
+    <option>Combustível</option>
+    <option>Pedágios</option>
+    <option>Peças</option>
+    <option>Hospedagem</option>
+    <option>Outros</option>
+  </select>
+
+  <select id="sub" class="hidden" onchange="calcularValor()">
+    <option value="">Refeição</option>
+    <option>Almoço</option>
+    <option>Café da tarde</option>
+    <option>Jantar</option>
+  </select>
+
+  <input type="number" id="qtd" class="hidden" min="1" placeholder="Quantidade" oninput="calcularValor()">
+  <input id="outros" class="hidden" placeholder="Descrição livre">
+  <input id="valor" type="number" placeholder="Valor (R$)" readonly>
+
+  <button onclick="addDespesa()">Adicionar despesa</button>
+</div>
+
+<div class="card">
+  <h3>Despesas lançadas</h3>
+  <div id="lista"></div>
+</div>
+
+<div class="card">
+  <h3>Anexos</h3>
+  <button class="btn-sec" onclick="camera.click()">📸 Câmera</button>
+  <input id="camera" type="file" accept="image/*" capture="environment" multiple hidden>
+
+  <button class="btn-sec" onclick="galeria.click()">🖼️ Galeria</button>
+  <input id="galeria" type="file" accept="image/*" multiple hidden>
+
+  <div id="listaAnexos"></div>
+</div>
+
+<div class="card">
+  <h3>Observações</h3>
+  <textarea id="observacoes" maxlength="500"></textarea>
+</div>
+
+<div class="card">
+  <button onclick="finalizar()">Finalizar viagem e gerar PDF</button>
+</div>
+
+<script>
 let despesas=[], anexos=[];
 
 function formatarDataHora(dt){
@@ -7,27 +126,6 @@ function formatarDataHora(dt){
   const [y,m,d] = data.split("-");
   return `${d}/${m}/${y} ${hora}`;
 }
-
-/* ===== CABEÇALHO PDF ===== */
-function adicionarCabecalho(pdf){
-  let y = 10;
-
-  try{
-    pdf.addImage("1000644584.png","PNG",10,y,30,15);
-  }catch(e){
-    // fallback se não carregar
-  }
-
-  pdf.setFontSize(12);
-  pdf.text("Cirurtec Hospitalar LTDA",50,y+5);
-
-  pdf.setFontSize(10);
-  pdf.text("Acerto de viagem de funcionário",50,y+12);
-
-  return 30; // retorna posição inicial do conteúdo
-}
-
-/* ===== RESTANTE DO CÓDIGO ===== */
 
 function addParada(){
   const d=document.createElement("div");
@@ -122,8 +220,8 @@ function renderDespesas(){
     lista.innerHTML+=`
       <div class="despesa">
         ${d.categoria} – R$ ${d.valorTotal.toFixed(2)}
-        <button class="btn-sec" onclick="editarDespesa(${i})">✏️</button>
-        <button class="btn-del" onclick="removerDespesa(${i})">❌</button>
+        <button class="btn-sec" onclick="editarDespesa(${i})">✏️ Editar</button>
+        <button class="btn-del" onclick="removerDespesa(${i})">❌ Excluir</button>
       </div>
     `;
   });
@@ -158,15 +256,15 @@ function editarDespesa(i){
   renderDespesas();
 }
 
-/* ===== FINALIZAR COM PDF PROFISSIONAL ===== */
 function finalizar(){
   const ad=Number(adiantamento.value)||0;
 
   const {jsPDF}=window.jspdf;
   const pdf=new jsPDF();
+  let y=10,total=0;
 
-  let y = adicionarCabecalho(pdf);
-  let total=0;
+  pdf.setFontSize(12);
+  pdf.text("Cirurtec Hospitalar LTDA",10,y);y+=8;
 
   pdf.setFontSize(10);
   pdf.text(`Técnico: ${nome.value}`,10,y);y+=5;
@@ -202,7 +300,6 @@ function finalizar(){
 
   pdf.text(`Adiantamento: R$ ${ad.toFixed(2)}`,10,y);y+=5;
   pdf.text(`Total gasto: R$ ${total.toFixed(2)}`,10,y);y+=5;
-
   const saldo=ad-total;
   pdf.text(`Saldo final: R$ ${saldo.toFixed(2)} ${saldo<0?"(NEGATIVO)":"(RESTANTE)"}`,10,y);
 
@@ -213,9 +310,7 @@ function finalizar(){
   }
 
   if(anexos.length){
-    pdf.addPage();
-    y=10;
-
+    pdf.addPage();y=10;
     anexos.forEach(a=>{
       if(y>220){pdf.addPage();y=10}
       pdf.addImage(a.img,"JPEG",10,y,80,60);
@@ -227,3 +322,6 @@ function finalizar(){
   pdf.save("Despesas_Cirurtec.pdf");
 }
 </script>
+
+</body>
+</html>
