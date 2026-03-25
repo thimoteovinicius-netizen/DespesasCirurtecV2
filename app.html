@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Despesas Cirurtec</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+body{font-family:Arial;background:#f4f4f4;padding:15px}
+h1{text-align:center}
+.card{background:#fff;padding:15px;border-radius:8px;margin-bottom:15px}
+input,select,button,textarea{width:100%;padding:10px;margin-top:8px}
+textarea{resize:none}
+button{background:#1976d2;color:#fff;border:none;border-radius:6px}
+.btn-sec{background:#455a64}
+.hidden{display:none}
+.despesa{border-top:1px solid #ddd;margin-top:6px;padding-top:6px}
+.anexo{border:1px solid #ccc;padding:8px;margin-top:8px;border-radius:6px}
+</style>
+</head>
+
+<body>
+
+<h1>Despesas Cirurtec</h1>
+
+<datalist id="cidades-mg">
+  <option value="Belo Horizonte - MG">
+  <option value="Uberlândia - MG">
+  <option value="Uberaba - MG">
+  <option value="Juiz de Fora - MG">
+  <option value="Divinópolis - MG">
+  <option value="Sete Lagoas - MG">
+  <option value="Montes Claros - MG">
+</datalist>
+
+<div class="card">
+  <input id="nome" placeholder="Nome do técnico">
+  <input id="email" placeholder="E-mail">
+</div>
+
+<div class="card">
+  <label>Data início</label>
+  <input type="date" id="dataInicio">
+  <label>Data final</label>
+  <input type="date" id="dataFim">
+  <input type="number" id="adiantamento" placeholder="Valor do adiantamento (R$)">
+</div>
+
+<div class="card">
+  <h3>Trajeto</h3>
+  <input list="cidades-mg" id="origem" placeholder="Ponto inicial">
+  <button class="btn-sec" onclick="addParada()">➕ Adicionar parada</button>
+  <div id="paradas"></div>
+  <input list="cidades-mg" id="destino" placeholder="Destino final">
+</div>
+
+<div class="card">
+  <h3>Nova despesa</h3>
+
+  <select id="categoria" onchange="controleCategoria()">
+    <option value="">Categoria</option>
+    <option>Alimentação</option>
+    <option>Bônus de viagem</option>
+    <option>Veículo próprio</option>
+    <option>Combustível</option>
+    <option>Pedágios</option>
+    <option>Peças</option>
+    <option>Hospedagem</option>
+    <option>Outros</option>
+  </select>
+
+  <select id="sub" class="hidden" onchange="calcularValor()">
+    <option value="">Refeição</option>
+    <option>Almoço</option>
+    <option>Café da tarde</option>
+    <option>Jantar</option>
+  </select>
+
+  <input type="number" id="qtd" class="hidden" min="1" placeholder="Quantidade" oninput="calcularValor()">
+  <input id="outros" class="hidden" placeholder="Descrição livre">
+  <input id="valor" type="number" placeholder="Valor (R$)" readonly>
+
+  <button onclick="addDespesa()">Adicionar despesa</button>
+</div>
+
+<div class="card">
+  <h3>Despesas lançadas</h3>
+  <div id="lista"></div>
+</div>
+
+<div class="card">
+  <h3>Anexos</h3>
+  <button class="btn-sec" onclick="camera.click()">📸 Câmera</button>
+  <input id="camera" type="file" accept="image/*" capture="environment" multiple hidden>
+
+  <button class="btn-sec" onclick="galeria.click()">🖼️ Galeria</button>
+  <input id="galeria" type="file" accept="image/*" multiple hidden>
+
+  <div id="listaAnexos"></div>
+</div>
+
+<div class="card">
+  <h3>Observações</h3>
+  <textarea id="observacoes" maxlength="500" placeholder="Observações gerais (até 500 caracteres)"></textarea>
+</div>
+
+<div class="card">
+  <button onclick="finalizar()">Finalizar viagem e gerar PDF</button>
+</div>
+
+<script>
+let despesas=[], anexos=[];
+
+function addParada(){
+  const d=document.createElement("div");
+  d.innerHTML=`<input list="cidades-mg" placeholder="Cidade de parada">`;
+  paradas.appendChild(d);
+}
+
+function processarArquivos(input){
+  [...input.files].forEach(f=>{
+    const r=new FileReader();
+    r.onload=e=>{
+      anexos.push({img:e.target.result, desc:""});
+      renderAnexos();
+    };
+    r.readAsDataURL(f);
+  });
+  input.value="";
+}
+
+camera.onchange=()=>processarArquivos(camera);
+galeria.onchange=()=>processarArquivos(galeria);
+
+function renderAnexos(){
+  listaAnexos.innerHTML="";
+  anexos.forEach((a,i)=>{
+    listaAnexos.innerHTML+=`
+      <div class="anexo">
+        <img src="${a.img}" width="100%">
+        <textarea placeholder="Descrição da imagem (opcional)"
+          oninput="anexos[${i}].desc=this.value"></textarea>
+      </div>`;
+  });
+}
+
+function controleCategoria(){
+  sub.classList.add("hidden");
+  qtd.classList.add("hidden");
+  outros.classList.add("hidden");
+  valor.value="";
+  valor.readOnly=true;
+
+  if(categoria.value==="Alimentação"){
+    sub.classList.remove("hidden");
+    qtd.classList.remove("hidden");
+  }
+
+  if(["Bônus de viagem","Veículo próprio"].includes(categoria.value)){
+    qtd.classList.remove("hidden");
+    calcularValor();
+  }
+
+  if(categoria.value==="Outros"){
+    outros.classList.remove("hidden");
+    valor.readOnly=false;
+  }
+
+  if(["Combustível","Pedágios","Peças","Hospedagem"].includes(categoria.value)){
+    valor.readOnly=false;
+  }
+}
+
+function calcularValor(){
+  const q=Number(qtd.value)||0;
+  if(categoria.value==="Alimentação"){
+    const t={Almoço:10,"Café da tarde":10,Jantar:40};
+    if(t[sub.value]&&q) valor.value=t[sub.value]*q;
+  }
+  if(categoria.value==="Bônus de viagem"&&q) valor.value=25*q;
+  if(categoria.value==="Veículo próprio"&&q) valor.value=(1.28*q).toFixed(2);
+}
+
+function addDespesa(){
+  if(!categoria.value||!valor.value) return alert("Dados incompletos");
+  despesas.push({
+    categoria:categoria.value,
+    detalhe:sub.value||outros.value||"",
+    quantidade:Number(qtd.value)||1,
+    valorUnitario:Number(valor.value)/(Number(qtd.value)||1),
+    valorTotal:Number(valor.value)
+  });
+  lista.innerHTML+=`<div class="despesa">${categoria.value} – R$ ${valor.value}</div>`;
+  categoria.value=sub.value=qtd.value=outros.value=valor.value="";
+  controleCategoria();
+}
+
+function finalizar(){
+  const ad=Number(adiantamento.value);
+  if(!ad) return alert("Informe o adiantamento");
+
+  const {jsPDF}=window.jspdf;
+  const pdf=new jsPDF();
+  let y=10,total=0;
+
+  pdf.setFontSize(12);
+  pdf.text("Cirurtec Hospitalar LTDA",10,y);y+=8;
+
+  pdf.setFontSize(10);
+  pdf.text(`Técnico: ${nome.value}`,10,y);y+=5;
+  pdf.text(`E-mail: ${email.value}`,10,y);y+=5;
+  pdf.text(`Data início: ${dataInicio.value}`,10,y);y+=5;
+  pdf.text(`Data final: ${dataFim.value}`,10,y);y+=8;
+
+  pdf.text("Trajeto",10,y);y+=5;
+  pdf.text(`Origem: ${origem.value}`,10,y);y+=5;
+  [...paradas.children].forEach((p,i)=>{
+    pdf.text(`Parada ${i+1}: ${p.querySelector("input").value}`,10,y);
+    y+=5;
+  });
+  pdf.text(`Destino: ${destino.value}`,10,y);y+=8;
+
+  const porCategoria={};
+  despesas.forEach(d=>{
+    if(!porCategoria[d.categoria]) porCategoria[d.categoria]=[];
+    porCategoria[d.categoria].push(d);
+    total+=d.valorTotal;
+  });
+
+  pdf.text("Despesas",10,y);y+=6;
+
+  for(const cat in porCategoria){
+    pdf.text(cat,10,y);y+=5;
+    porCategoria[cat].forEach(d=>{
+      pdf.text(
+        `${d.detalhe||""} | Qtd: ${d.quantidade} | Valor: R$ ${d.valorTotal.toFixed(2)}`,
+        12,y
+      );
+      y+=5;
+    });
+    y+=3;
+  }
+
+  pdf.text(`Adiantamento: R$ ${ad.toFixed(2)}`,10,y);y+=5;
+  pdf.text(`Total gasto: R$ ${total.toFixed(2)}`,10,y);y+=5;
+  const saldo=ad-total;
+  pdf.text(`Saldo final: R$ ${saldo.toFixed(2)} ${saldo<0?"(NEGATIVO)":"(RESTANTE)"}`,10,y);
+
+  if(observacoes.value){
+    y+=8;
+    pdf.text("Observações:",10,y);y+=5;
+    pdf.text(observacoes.value,10,y,{maxWidth:190});
+  }
+
+  if(anexos.length){
+    pdf.addPage();y=10;
+    anexos.forEach(a=>{
+      if(y>220){pdf.addPage();y=10}
+      pdf.addImage(a.img,"JPEG",10,y,80,60);
+      if(a.desc) pdf.text(a.desc,10,y+65);
+      y+=75;
+    });
+  }
+
+  pdf.save("Despesas_Cirurtec.pdf");
+}
+</script>
+
+</body>
+</html>
