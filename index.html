@@ -4,181 +4,164 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Frota Pro Inteligente</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<title>Frota Pro - Sistema</title>
 
 <style>
-body{font-family:Inter;background:#f4f6f9;padding:15px;}
-.card{background:#fff;padding:16px;border-radius:16px;margin-bottom:12px;}
-button{width:100%;padding:12px;margin-top:10px;border:none;border-radius:12px;background:#1976d2;color:#fff;}
-.alerta{background:#fff3cd;padding:10px;border-radius:10px;margin-top:8px;}
-.falha{background:#fdecea;padding:10px;border-radius:10px;margin-top:8px;}
-.ok{background:#e8f5e9;padding:10px;border-radius:10px;margin-top:8px;}
+body{font-family:Arial;background:#f4f6f9;padding:15px;}
+.card{background:#fff;padding:15px;border-radius:12px;margin-bottom:12px;}
+input,select,textarea{width:100%;padding:8px;margin-top:5px;border-radius:8px;}
+button{width:100%;padding:12px;margin-top:10px;background:#1976d2;color:#fff;border:none;border-radius:10px;}
+.hidden{display:none;}
+.item{padding:8px;background:#eee;margin-top:6px;border-radius:8px;}
 </style>
 </head>
 
 <body>
 
-<h2>🚗 Frota Inteligente</h2>
+<h2>🚗 Frota Pro</h2>
+
+<!-- LOGIN -->
+<div class="card" id="loginBox">
+  <h3>Login por Veículo</h3>
+
+  <select id="veiculoLogin"></select>
+  <input id="senhaLogin" placeholder="Senha">
+
+  <button onclick="login()">Entrar</button>
+</div>
+
+<!-- CADASTRO -->
+<div class="card">
+  <h3>Cadastrar Veículo</h3>
+  <input id="novoVeiculo" placeholder="Placa / Nome">
+  <input id="usuario" placeholder="Responsável">
+  <input id="senha" placeholder="Senha">
+  <button onclick="addVeiculo()">Cadastrar</button>
+</div>
+
+<!-- SISTEMA -->
+<div id="sistema" class="hidden">
 
 <div class="card">
-<input id="veiculo" placeholder="Veículo">
-<input id="motorista" placeholder="Motorista">
-<input type="number" id="kmInicial" placeholder="KM Inicial">
-<input type="number" id="kmFinal" placeholder="KM Final">
+  <h3 id="infoVeiculo"></h3>
+</div>
+
+<div class="card" id="checklist"></div>
+
+<div class="card">
+  <button onclick="salvarChecklist()">Salvar Checklist</button>
 </div>
 
 <div class="card">
-<h3>Checklist</h3>
-
-<label><input type="checkbox" id="pneus"> Pneus</label><br>
-<label><input type="checkbox" id="oleo"> Óleo</label><br>
-<label><input type="checkbox" id="freios"> Freios</label><br>
-<label><input type="checkbox" id="luzes"> Luzes</label><br>
-<label><input type="checkbox" id="doc"> Documentos</label><br>
-
-<select id="combustivel">
-<option>Até 1/4</option>
-<option>Entre 1/4 e 1/2</option>
-<option>Acima de 1/2</option>
-<option>Entre 1/2 e 1</option>
-</select>
-
-<label><input type="checkbox" id="limpador"> Limpador</label><br>
-<label><input type="checkbox" id="arrefecimento"> Arrefecimento</label><br>
-
-<select id="limpoDentro">
-<option>Sim</option>
-<option>Não</option>
-</select>
-
-<select id="limpoFora">
-<option>Sim</option>
-<option>Não</option>
-</select>
-
-<button onclick="analisar()">🔍 Analisar Veículo</button>
-
-<div id="resultado"></div>
-
+  <h3>Histórico</h3>
+  <div id="historico"></div>
 </div>
 
-<div class="card">
-<button onclick="gerarPDF()">📄 Gerar Relatório</button>
-<button onclick="revisarPDF()">👁 Revisar</button>
-<button onclick="enviar()">📤 Enviar</button>
 </div>
 
 <script>
 
-let pdfBlob=null;
-let falhas=[];
-let alertas=[];
-let status="OK";
+// DADOS
+let veiculos = JSON.parse(localStorage.getItem("veiculos")||"[]");
+let atual = null;
 
-function analisar(){
+const itens = [
+"TRANCAS","DOCUMENTO","CINTO","FREIO","BUZINA",
+"PNEUS","LUZES","ÓLEO","RADIADOR","LIMPEZA"
+];
 
-  falhas=[];
-  alertas=[];
-  status="OK";
-
-  if(!pneus.checked) falhas.push("Pneus com problema");
-  if(!oleo.checked) falhas.push("Óleo com problema");
-  if(!freios.checked) falhas.push("Freios com problema");
-  if(!luzes.checked) falhas.push("Luzes com problema");
-  if(!doc.checked) falhas.push("Documentação irregular");
-
-  if(!limpador.checked) falhas.push("Limpador com problema");
-  if(!arrefecimento.checked) falhas.push("Nível de arrefecimento baixo");
-
-  if(limpoDentro.value==="Não") alertas.push("Veículo sujo por dentro");
-  if(limpoFora.value==="Não") alertas.push("Veículo sujo por fora");
-
-  if(combustivel.value==="Até 1/4") alertas.push("Combustível baixo");
-
-  let km = kmFinal.value - kmInicial.value;
-  if(km > 300) alertas.push("Rodagem alta no período");
-
-  if(falhas.length > 3) status="CRÍTICO";
-  else if(falhas.length > 0) status="ATENÇÃO";
-
-  mostrarResultado();
+// RENDER LOGIN
+function renderLogin(){
+  veiculoLogin.innerHTML = veiculos.map(v=>`<option>${v.nome}</option>`).join("");
 }
+renderLogin();
 
-function mostrarResultado(){
-
-  resultado.innerHTML="";
-
-  resultado.innerHTML += `<div class="${status==="OK"?"ok":"falha"}">Status: ${status}</div>`;
-
-  falhas.forEach(f=>{
-    resultado.innerHTML += `<div class="falha">❌ ${f}</div>`;
+// CADASTRO
+function addVeiculo(){
+  veiculos.push({
+    nome:novoVeiculo.value,
+    usuario:usuario.value,
+    senha:senha.value,
+    historico:[]
   });
 
-  alertas.forEach(a=>{
-    resultado.innerHTML += `<div class="alerta">⚠️ ${a}</div>`;
+  localStorage.setItem("veiculos",JSON.stringify(veiculos));
+  renderLogin();
+
+  alert("Veículo cadastrado!");
+}
+
+// LOGIN
+function login(){
+  let v = veiculos.find(v=>v.nome===veiculoLogin.value && v.senha===senhaLogin.value);
+
+  if(!v) return alert("Senha incorreta");
+
+  atual = v;
+
+  loginBox.classList.add("hidden");
+  sistema.classList.remove("hidden");
+
+  infoVeiculo.innerText = `Veículo: ${v.nome} | Responsável: ${v.usuario}`;
+
+  renderChecklist();
+  renderHistorico();
+}
+
+// CHECKLIST
+function renderChecklist(){
+  checklist.innerHTML="";
+
+  itens.forEach((item,i)=>{
+    checklist.innerHTML+=`
+      <div>
+        <label>${item}</label>
+        <select id="i${i}">
+          <option>Aprovado</option>
+          <option>Reprovado</option>
+        </select>
+        <textarea id="obs${i}" placeholder="Observação"></textarea>
+      </div>
+    `;
   });
 }
 
-// PDF
-function gerarPDF(){
+// SALVAR
+function salvarChecklist(){
 
-  const {jsPDF}=window.jspdf;
-  const pdf=new jsPDF();
-  let y=10;
+  let dados = itens.map((item,i)=>({
+    item,
+    status:document.getElementById("i"+i).value,
+    obs:document.getElementById("obs"+i).value
+  }));
 
-  pdf.text("RELATÓRIO INTELIGENTE",10,y); y+=10;
-
-  pdf.text(`Veículo: ${veiculo.value}`,10,y); y+=8;
-  pdf.text(`Motorista: ${motorista.value}`,10,y); y+=8;
-
-  pdf.text(`KM Rodado: ${kmFinal.value - kmInicial.value}`,10,y); y+=10;
-
-  pdf.text(`STATUS: ${status}`,10,y); y+=10;
-
-  pdf.text("FALHAS:",10,y); y+=8;
-  falhas.forEach(f=>{
-    pdf.text(`- ${f}`,10,y);
-    y+=6;
+  atual.historico.push({
+    data:new Date().toLocaleString(),
+    dados
   });
 
-  pdf.text("ALERTAS:",10,y); y+=8;
-  alertas.forEach(a=>{
-    pdf.text(`- ${a}`,10,y);
-    y+=6;
+  localStorage.setItem("veiculos",JSON.stringify(veiculos));
+
+  renderHistorico();
+
+  alert("Salvo com sucesso!");
+}
+
+// HISTÓRICO
+function renderHistorico(){
+
+  historico.innerHTML="";
+
+  atual.historico.forEach(h=>{
+    historico.innerHTML+=`
+      <div class="item">
+        ${h.data}
+      </div>
+    `;
   });
-
-  pdfBlob = pdf.output("blob");
-
-  alert("Relatório gerado!");
-}
-
-// REVISAR
-function revisarPDF(){
-  if(!pdfBlob) return alert("Gere primeiro!");
-  window.open(URL.createObjectURL(pdfBlob));
-}
-
-// ENVIAR
-async function enviar(){
-
-  if(!pdfBlob) return alert("Gere primeiro!");
-
-  const file=new File([pdfBlob],"Relatorio_Inteligente.pdf",{type:"application/pdf"});
-
-  if(navigator.share){
-    await navigator.share({
-      files:[file],
-      title:"Relatório Frota"
-    });
-  }else{
-    alert("Não suportado.");
-  }
 }
 
 </script>
 
 </body>
-  </html>
+</html>
