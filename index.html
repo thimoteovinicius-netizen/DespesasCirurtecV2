@@ -13,7 +13,10 @@ body{font-family:Arial;background:#f4f6f9;padding:15px;}
 .card{background:#fff;padding:15px;border-radius:12px;margin-bottom:12px;}
 input,select,textarea{width:100%;padding:8px;margin-top:5px;border-radius:8px;}
 button{width:100%;padding:12px;margin-top:10px;background:#1976d2;color:#fff;border:none;border-radius:10px;}
-.item{background:#eee;padding:8px;margin-top:6px;border-radius:8px;}
+.item{padding:10px;margin-top:6px;border-radius:8px;}
+.aprovado{background:#e8f5e9;}
+.reprovado{background:#fdecea;}
+.na{background:#eeeeee;}
 img{width:100%;margin-top:5px;border-radius:8px;}
 </style>
 </head>
@@ -66,48 +69,28 @@ img{width:100%;margin-top:5px;border-radius:8px;}
 
 <script>
 
-// ✅ CHECKLIST COMPLETO RESTAURADO
 const itens = [
-"TRANCAS E ALARMES",
-"DOCUMENTO DO VEÍCULO",
-"CINTO DE SEGURANÇA",
-"FREIO DE MÃO",
-"BUZINA",
-"MACACO MECÂNICO",
-"TRIÂNGULO",
-"AR CONDICIONADO",
-"LUZES DO PAINEL",
-"FAROL BAIXO",
-"FAROL ALTO",
-"LUZ DE RÉ",
-"LUZ DE FREIO",
-"PISCA ALERTA",
-"SETAS",
-"PARA-BRISA E VIDROS",
-"PNEUS",
-"CALIBRAGEM PNEUS",
-"ESTEPE",
-"RETROVISORES",
-"LENTE DO FAROL",
-"PALHETAS",
-"NIVEL DE ÓLEO",
-"FLUÍDO DO RADIADOR",
-"AGUA DO PARA-BRISA",
-"LIMPEZA EXTERNA",
-"LIMPEZA INTERNA"
+"TRANCAS E ALARMES","DOCUMENTO DO VEÍCULO","CINTO DE SEGURANÇA",
+"FREIO DE MÃO","BUZINA","MACACO MECÂNICO","TRIÂNGULO",
+"AR CONDICIONADO","LUZES DO PAINEL","FAROL BAIXO","FAROL ALTO",
+"LUZ DE RÉ","LUZ DE FREIO","PISCA ALERTA","SETAS",
+"PARA-BRISA E VIDROS","PNEUS","CALIBRAGEM PNEUS","ESTEPE",
+"RETROVISORES","LENTE DO FAROL","PALHETAS",
+"NIVEL DE ÓLEO","FLUÍDO DO RADIADOR","AGUA DO PARA-BRISA",
+"LIMPEZA EXTERNA","LIMPEZA INTERNA"
 ];
 
-let fotosBase64 = [];
-let pdfBlob = null;
+let fotosBase64=[];
+let pdfBlob=null;
 
 // RENDER
 function renderChecklist(){
   checklist.innerHTML="";
   itens.forEach((item,i)=>{
     checklist.innerHTML+=`
-      <div class="item">
+      <div id="box${i}" class="item na">
         <label>${item}</label>
-        <select id="i${i}">
+        <select id="i${i}" onchange="cor(${i})">
           <option>Aprovado</option>
           <option>Reprovado</option>
           <option>N/A</option>
@@ -119,16 +102,28 @@ function renderChecklist(){
 }
 renderChecklist();
 
+// COR DINÂMICA
+function cor(i){
+  let val=document.getElementById("i"+i).value;
+  let box=document.getElementById("box"+i);
+
+  box.classList.remove("aprovado","reprovado","na");
+
+  if(val==="Aprovado") box.classList.add("aprovado");
+  else if(val==="Reprovado") box.classList.add("reprovado");
+  else box.classList.add("na");
+}
+
 // FOTOS
 function previewFotos(){
   preview.innerHTML="";
   fotosBase64=[];
 
   [...fotos.files].forEach(f=>{
-    const reader = new FileReader();
-    reader.onload = e=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
       fotosBase64.push(e.target.result);
-      preview.innerHTML += `<img src="${e.target.result}">`;
+      preview.innerHTML+=`<img src="${e.target.result}">`;
     }
     reader.readAsDataURL(f);
   });
@@ -144,46 +139,14 @@ function validar(){
   return null;
 }
 
-// RESUMO
-function resumo(){
-
-  let erro = validar();
-  if(erro){ alert(erro); return; }
-
-  let html = `
-  <b>Tipo:</b> ${tipo.value}<br>
-  <b>Usuário:</b> ${usuario.value}<br>
-  <b>Veículo:</b> ${veiculo.value}<br>
-  <b>Placa:</b> ${placa.value}<br>
-  <b>KM:</b> ${km.value}<br>
-  <b>Data:</b> ${dataHora.value}<br>
-  <b>Local:</b> ${local.value}<br><br>
-  `;
-
-  itens.forEach((item,i)=>{
-    let status = document.getElementById("i"+i).value;
-    let obs = document.getElementById("obs"+i).value;
-    html += `${item}: ${status} ${obs ? "- "+obs : ""}<br>`;
-  });
-
-  if(fotosBase64.length){
-    html += "<br><b>Fotos:</b><br>";
-    fotosBase64.forEach(f=> html += `<img src="${f}">`);
-  }
-
-  html += `<br><b>Obs Final:</b> ${obsFinal.value}`;
-
-  resumoBox.innerHTML = html;
-}
-
 // PDF
 async function gerarPDF(){
 
-  let erro = validar();
-  if(erro){ alert(erro); return; }
+  let erro=validar();
+  if(erro){alert(erro);return;}
 
-  const {jsPDF} = window.jspdf;
-  const pdf = new jsPDF();
+  const {jsPDF}=window.jspdf;
+  const pdf=new jsPDF();
 
   let y=10;
 
@@ -201,33 +164,46 @@ async function gerarPDF(){
   pdf.text(`Data: ${dataHora.value}`,10,y); y+=6;
   pdf.text(`Local: ${local.value}`,10,y); y+=10;
 
-  for(let i=0;i<itens.length;i++){
-    let status = document.getElementById("i"+i).value;
-    let obs = document.getElementById("obs"+i).value;
+  // CABEÇALHO TABELA
+  pdf.text("ITEM",10,y);
+  pdf.text("STATUS",120,y);
+  pdf.text("OBS",150,y);
+  y+=5;
 
-    pdf.text(`${itens[i]}: ${status}`,10,y); y+=5;
+  for(let i=0;i<itens.length;i++){
+
+    let status=document.getElementById("i"+i).value;
+    let obs=document.getElementById("obs"+i).value;
+
+    // COR TEXTO
+    if(status==="Aprovado") pdf.setTextColor(0,150,0);
+    else if(status==="Reprovado") pdf.setTextColor(200,0,0);
+    else pdf.setTextColor(0,0,0);
+
+    pdf.text(itens[i],10,y);
+    pdf.text(status,120,y);
+
+    pdf.setTextColor(0,0,0);
 
     if(obs){
-      pdf.text(`Obs: ${obs}`,12,y); y+=5;
+      pdf.text(obs,150,y);
     }
 
-    if(y>260){
+    y+=6;
+
+    if(y>270){
       pdf.addPage();
       y=10;
     }
   }
 
-  if(obsFinal.value){
-    pdf.text(`Obs Final: ${obsFinal.value}`,10,y);
-  }
-
+  // FOTOS
   for(let img of fotosBase64){
     pdf.addPage();
     pdf.addImage(img,"JPEG",10,10,180,100);
   }
 
-  pdfBlob = pdf.output("blob");
-
+  pdfBlob=pdf.output("blob");
   pdf.save("Checklist_Frota.pdf");
 }
 
@@ -239,7 +215,7 @@ async function enviar(){
     return;
   }
 
-  const file = new File([pdfBlob],"Checklist_Frota.pdf",{type:"application/pdf"});
+  const file=new File([pdfBlob],"Checklist_Frota.pdf",{type:"application/pdf"});
 
   if(navigator.share){
     await navigator.share({
