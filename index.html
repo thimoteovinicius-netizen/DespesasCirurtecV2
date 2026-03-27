@@ -4,6 +4,214 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<title>Frota Cirurtec</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+body{font-family:Arial;background:#f4f6f9;padding:15px;}
+.card{background:#fff;padding:15px;border-radius:12px;margin-bottom:12px;}
+input,select,textarea{width:100%;padding:8px;margin-top:5px;border-radius:8px;}
+button{width:100%;padding:12px;margin-top:10px;background:#1976d2;color:#fff;border:none;border-radius:10px;}
+.hidden{display:none;}
+.item{background:#eee;padding:10px;margin-top:6px;border-radius:8px;cursor:pointer;}
+</style>
+</head>
+
+<body>
+
+<h2>🚗 Frota Empresarial</h2>
+
+<!-- LOGIN -->
+<div class="card" id="loginBox">
+  <h3>Login</h3>
+  <select id="veiculoLogin">
+    <option>GOL</option>
+  </select>
+  <input id="senhaLogin" placeholder="Placa">
+  <button onclick="login()">Entrar</button>
+</div>
+
+<!-- SISTEMA -->
+<div id="sistema" class="hidden">
+
+<div class="card">
+  <h3 id="info"></h3>
+</div>
+
+<div class="card">
+  <input id="motorista" placeholder="Motorista do dia">
+  <input type="date" id="data">
+</div>
+
+<div class="card" id="checklist"></div>
+
+<div class="card">
+  <h3>Fotos</h3>
+  <input type="file" id="fotos" multiple>
+</div>
+
+<div class="card">
+  <button onclick="salvar()">Salvar Checklist</button>
+</div>
+
+<div class="card">
+  <h3>Histórico</h3>
+  <div id="historico"></div>
+</div>
+
+<div class="card">
+  <h3>Gerar PDF</h3>
+  <select id="qtdPDF">
+    <option value="1">Último checklist</option>
+    <option value="3">Últimos 3</option>
+    <option value="10">Últimos 10</option>
+  </select>
+  <button onclick="gerarPDF()">Gerar PDF</button>
+</div>
+
+</div>
+
+<script>
+
+let veiculo = {
+  modelo:"GOL",
+  placa:"QUP6243",
+  historico: JSON.parse(localStorage.getItem("historicoGOL")||"[]")
+};
+
+let logado=false;
+
+const itens = [
+"TRANCAS","DOCUMENTO","CINTO","FREIO","BUZINA",
+"PNEUS","LUZES","ÓLEO","RADIADOR","LIMPEZA"
+];
+
+// LOGIN
+function login(){
+  if(senhaLogin.value !== veiculo.placa){
+    return alert("Placa incorreta");
+  }
+
+  loginBox.classList.add("hidden");
+  sistema.classList.remove("hidden");
+
+  info.innerText = `Veículo: ${veiculo.modelo}`;
+
+  renderChecklist();
+  renderHistorico();
+}
+
+// CHECKLIST
+function renderChecklist(){
+  checklist.innerHTML="";
+  itens.forEach((item,i)=>{
+    checklist.innerHTML+=`
+      <div>
+        <label>${item}</label>
+        <select id="i${i}">
+          <option>Aprovado</option>
+          <option>Reprovado</option>
+        </select>
+        <textarea id="obs${i}" placeholder="Observação"></textarea>
+      </div>
+    `;
+  });
+}
+
+// SALVAR
+function salvar(){
+
+  let dados = itens.map((item,i)=>{
+    let status = document.getElementById("i"+i).value;
+    let obs = document.getElementById("obs"+i).value;
+
+    if(status==="Reprovado" && !obs){
+      alert("Preencha observação em: "+item);
+      throw "erro";
+    }
+
+    return {item,status,obs};
+  });
+
+  veiculo.historico.unshift({
+    motorista:motorista.value,
+    data:data.value,
+    dados
+  });
+
+  veiculo.historico = veiculo.historico.slice(0,10);
+
+  localStorage.setItem("historicoGOL",JSON.stringify(veiculo.historico));
+
+  renderHistorico();
+
+  alert("Checklist salvo!");
+}
+
+// HISTÓRICO
+function renderHistorico(){
+
+  historico.innerHTML="";
+
+  veiculo.historico.forEach(h=>{
+    historico.innerHTML+=`
+      <div class="item">
+        ${h.data} - ${h.motorista}
+      </div>
+    `;
+  });
+}
+
+// PDF
+function gerarPDF(){
+
+  const {jsPDF}=window.jspdf;
+  const pdf=new jsPDF();
+
+  let qtd = Number(qtdPDF.value);
+  let registros = veiculo.historico.slice(0,qtd);
+
+  let y=10;
+
+  pdf.text("RELATÓRIO DE FROTA",10,y); y+=10;
+
+  registros.forEach((h,index)=>{
+
+    pdf.text(`Data: ${h.data} - Motorista: ${h.motorista}`,10,y);
+    y+=6;
+
+    h.dados.forEach(d=>{
+      pdf.text(`${d.item}: ${d.status}`,12,y);
+      y+=5;
+
+      if(d.obs){
+        pdf.text(`Obs: ${d.obs}`,14,y);
+        y+=5;
+      }
+
+      if(y>270){
+        pdf.addPage();
+        y=10;
+      }
+    });
+
+    y+=5;
+
+  });
+
+  pdf.save("Relatorio_Frota.pdf");
+}
+
+</script>
+
+</body>
+</html><!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Controle de frota Cirurtec</title>
 
 <style>
