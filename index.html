@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Frota Cirurtec</title>
+<title>Frota Empresarial</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
@@ -13,8 +13,8 @@ body{font-family:Arial;background:#f4f6f9;padding:15px;}
 .card{background:#fff;padding:15px;border-radius:12px;margin-bottom:12px;}
 input,select,textarea{width:100%;padding:8px;margin-top:5px;border-radius:8px;}
 button{width:100%;padding:12px;margin-top:10px;background:#1976d2;color:#fff;border:none;border-radius:10px;}
+.item{background:#eee;padding:10px;margin-top:6px;border-radius:8px;}
 .hidden{display:none;}
-.item{background:#eee;padding:10px;margin-top:6px;border-radius:8px;cursor:pointer;}
 </style>
 </head>
 
@@ -22,13 +22,13 @@ button{width:100%;padding:12px;margin-top:10px;background:#1976d2;color:#fff;bor
 
 <h2>🚗 Frota Empresarial</h2>
 
-<!-- LOGIN -->
+<!-- LOGIN ÚNICO -->
 <div class="card" id="loginBox">
-  <h3>Login</h3>
-  <select id="veiculoLogin">
-    <option>GOL</option>
-  </select>
-  <input id="senhaLogin" placeholder="Placa">
+  <h3>Login do Veículo</h3>
+
+  <p><b>Veículo:</b> GOL</p>
+
+  <input id="senhaLogin" placeholder="Digite a placa">
   <button onclick="login()">Entrar</button>
 </div>
 
@@ -36,7 +36,7 @@ button{width:100%;padding:12px;margin-top:10px;background:#1976d2;color:#fff;bor
 <div id="sistema" class="hidden">
 
 <div class="card">
-  <h3 id="info"></h3>
+  <h3>Veículo: GOL</h3>
 </div>
 
 <div class="card">
@@ -74,13 +74,12 @@ button{width:100%;padding:12px;margin-top:10px;background:#1976d2;color:#fff;bor
 
 <script>
 
-let veiculo = {
+// VEÍCULO FIXO
+const veiculo = {
   modelo:"GOL",
   placa:"QUP6243",
   historico: JSON.parse(localStorage.getItem("historicoGOL")||"[]")
 };
-
-let logado=false;
 
 const itens = [
 "TRANCAS","DOCUMENTO","CINTO","FREIO","BUZINA",
@@ -89,14 +88,16 @@ const itens = [
 
 // LOGIN
 function login(){
-  if(senhaLogin.value !== veiculo.placa){
-    return alert("Placa incorreta");
+
+  let senha = senhaLogin.value.trim().toUpperCase();
+
+  if(senha !== veiculo.placa){
+    alert("Placa incorreta");
+    return;
   }
 
   loginBox.classList.add("hidden");
   sistema.classList.remove("hidden");
-
-  info.innerText = `Veículo: ${veiculo.modelo}`;
 
   renderChecklist();
   renderHistorico();
@@ -123,6 +124,7 @@ function renderChecklist(){
 function salvar(){
 
   let dados = itens.map((item,i)=>{
+
     let status = document.getElementById("i"+i).value;
     let obs = document.getElementById("obs"+i).value;
 
@@ -176,7 +178,7 @@ function gerarPDF(){
 
   pdf.text("RELATÓRIO DE FROTA",10,y); y+=10;
 
-  registros.forEach((h,index)=>{
+  registros.forEach(h=>{
 
     pdf.text(`Data: ${h.data} - Motorista: ${h.motorista}`,10,y);
     y+=6;
@@ -201,242 +203,6 @@ function gerarPDF(){
   });
 
   pdf.save("Relatorio_Frota.pdf");
-}
-
-</script>
-
-</body>
-</html><!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Controle de frota Cirurtec</title>
-
-<style>
-body{font-family:Arial;background:#f4f6f9;padding:15px;}
-.card{background:#fff;padding:15px;border-radius:12px;margin-bottom:12px;}
-input,select,textarea{width:100%;padding:8px;margin-top:5px;border-radius:8px;}
-button{width:100%;padding:12px;margin-top:10px;background:#1976d2;color:#fff;border:none;border-radius:10px;}
-.hidden{display:none;}
-.item{background:#eee;padding:10px;margin-top:6px;border-radius:8px;cursor:pointer;}
-.detalhe{background:#fafafa;padding:10px;margin-top:10px;border-radius:8px;}
-img{width:100%;margin-top:5px;border-radius:8px;}
-</style>
-</head>
-
-<body>
-
-<h2>🚗 Sistema de Frota</h2>
-
-<!-- LOGIN -->
-<div class="card" id="loginBox">
-  <h3>Login</h3>
-  <select id="veiculoLogin"></select>
-  <input id="senhaLogin" placeholder="Placa">
-  <button onclick="login()">Entrar</button>
-</div>
-
-<!-- CADASTRO -->
-<div class="card">
-  <h3>Cadastrar Veículo</h3>
-  <input id="modelo" placeholder="Modelo">
-  <input id="placa" placeholder="Placa">
-  <button onclick="cadastrar()">Cadastrar</button>
-</div>
-
-<!-- SISTEMA -->
-<div id="sistema" class="hidden">
-
-<div class="card">
-  <h3 id="info"></h3>
-</div>
-
-<div class="card">
-  <input id="motorista" placeholder="Motorista do dia">
-  <input type="date" id="data">
-</div>
-
-<div class="card" id="checklist"></div>
-
-<div class="card">
-  <h3>Fotos</h3>
-  <input type="file" id="fotos" multiple>
-</div>
-
-<div class="card">
-  <button onclick="salvar()">Salvar Checklist</button>
-</div>
-
-<div class="card">
-  <h3>Últimos 10 registros</h3>
-  <div id="historico"></div>
-</div>
-
-<div class="card">
-  <h3>Detalhes do Checklist</h3>
-  <div id="detalhe"></div>
-</div>
-
-</div>
-
-<script>
-
-let veiculos = JSON.parse(localStorage.getItem("veiculos")||"[]");
-let atual = null;
-
-const itens = [
-"TRANCAS","DOCUMENTO","CINTO","FREIO","BUZINA",
-"PNEUS","LUZES","ÓLEO","RADIADOR","LIMPEZA"
-];
-
-// LOGIN
-function renderLogin(){
-  veiculoLogin.innerHTML = veiculos.map(v=>`<option>${v.modelo}</option>`).join("");
-}
-renderLogin();
-
-function cadastrar(){
-  veiculos.push({
-    modelo:modelo.value,
-    placa:placa.value,
-    historico:[]
-  });
-
-  localStorage.setItem("veiculos",JSON.stringify(veiculos));
-  renderLogin();
-  alert("Veículo cadastrado!");
-}
-
-function login(){
-  let v = veiculos.find(v=>v.modelo===veiculoLogin.value && v.placa===senhaLogin.value);
-  if(!v) return alert("Erro no login");
-
-  atual = v;
-
-  loginBox.classList.add("hidden");
-  sistema.classList.remove("hidden");
-
-  info.innerText = `Veículo: ${v.modelo}`;
-
-  renderChecklist();
-  renderHistorico();
-}
-
-// CHECKLIST
-function renderChecklist(){
-  checklist.innerHTML="";
-  itens.forEach((item,i)=>{
-    checklist.innerHTML+=`
-      <div>
-        <label>${item}</label>
-        <select id="i${i}">
-          <option>Aprovado</option>
-          <option>Reprovado</option>
-        </select>
-        <textarea id="obs${i}" placeholder="Observação"></textarea>
-      </div>
-    `;
-  });
-}
-
-// SALVAR
-function salvar(){
-
-  let dados = itens.map((item,i)=>{
-
-    let status = document.getElementById("i"+i).value;
-    let obs = document.getElementById("obs"+i).value;
-
-    if(status==="Reprovado" && !obs){
-      alert("Preencha observação em: "+item);
-      throw "erro";
-    }
-
-    return {item,status,obs};
-  });
-
-  let fotosArray = [];
-
-  const arquivos = [...fotos.files];
-  let lidos = 0;
-
-  if(arquivos.length === 0){
-    finalizarSave(dados, fotosArray);
-    return;
-  }
-
-  arquivos.forEach(f=>{
-    const reader = new FileReader();
-    reader.onload = e=>{
-      fotosArray.push(e.target.result);
-      lidos++;
-
-      if(lidos === arquivos.length){
-        finalizarSave(dados, fotosArray);
-      }
-    }
-    reader.readAsDataURL(f);
-  });
-}
-
-function finalizarSave(dados, fotosArray){
-
-  atual.historico.unshift({
-    motorista:motorista.value,
-    data:data.value,
-    dados,
-    fotos:fotosArray
-  });
-
-  atual.historico = atual.historico.slice(0,10);
-
-  localStorage.setItem("veiculos",JSON.stringify(veiculos));
-
-  renderHistorico();
-
-  alert("Checklist salvo!");
-}
-
-// HISTÓRICO
-function renderHistorico(){
-
-  historico.innerHTML="";
-
-  atual.historico.forEach((h,i)=>{
-    historico.innerHTML+=`
-      <div class="item" onclick="abrir(${i})">
-        ${h.data} - ${h.motorista}
-      </div>
-    `;
-  });
-}
-
-// ABRIR DETALHE
-function abrir(i){
-
-  let h = atual.historico[i];
-
-  detalhe.innerHTML = `
-    <div class="detalhe">
-      <b>Motorista:</b> ${h.motorista}<br>
-      <b>Data:</b> ${h.data}<br><br>
-    </div>
-  `;
-
-  h.dados.forEach(d=>{
-    detalhe.innerHTML += `
-      <div class="detalhe">
-        ${d.item}: ${d.status}<br>
-        ${d.obs ? "Obs: "+d.obs : ""}
-      </div>
-    `;
-  });
-
-  h.fotos.forEach(img=>{
-    detalhe.innerHTML += `<img src="${img}">`;
-  });
 }
 
 </script>
