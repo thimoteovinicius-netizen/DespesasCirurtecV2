@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Frota Empresarial</title>
+<title>Checklist Veicular</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
@@ -13,102 +13,70 @@ body{font-family:Arial;background:#f4f6f9;padding:15px;}
 .card{background:#fff;padding:15px;border-radius:12px;margin-bottom:12px;}
 input,select,textarea{width:100%;padding:8px;margin-top:5px;border-radius:8px;}
 button{width:100%;padding:12px;margin-top:10px;background:#1976d2;color:#fff;border:none;border-radius:10px;}
-.item{background:#eee;padding:10px;margin-top:6px;border-radius:8px;}
-.hidden{display:none;}
+.item{background:#eee;padding:8px;margin-top:6px;border-radius:8px;}
 </style>
 </head>
 
 <body>
 
-<h2>🚗 Frota Empresarial</h2>
-
-<!-- LOGIN ÚNICO -->
-<div class="card" id="loginBox">
-  <h3>Login do Veículo</h3>
-
-  <p><b>Veículo:</b> GOL</p>
-
-  <input id="senhaLogin" placeholder="Digite a placa">
-  <button onclick="login()">Entrar</button>
-</div>
-
-<!-- SISTEMA -->
-<div id="sistema" class="hidden">
+<h2>🚗 Checklist Veicular</h2>
 
 <div class="card">
-  <h3>Veículo: GOL</h3>
-</div>
 
-<div class="card">
-  <input id="motorista" placeholder="Motorista do dia">
-  <input type="date" id="data">
+<label>Tipo de Checklist</label>
+<select id="tipo">
+  <option value="">Selecione</option>
+  <option>Check list inicial</option>
+  <option>Check list final</option>
+</select>
+
+<input id="usuario" placeholder="Nome do usuário">
+<input id="veiculo" placeholder="Veículo (ex: Gol)">
+<input id="placa" placeholder="Placa">
+
+<input id="km" type="number" placeholder="KM do veículo">
+
+<input type="datetime-local" id="dataHora">
+<input id="local" placeholder="Local da vistoria">
+
 </div>
 
 <div class="card" id="checklist"></div>
 
 <div class="card">
-  <h3>Fotos</h3>
-  <input type="file" id="fotos" multiple>
+<h3>Fotos</h3>
+<input type="file" id="fotos" multiple accept="image/*">
 </div>
 
 <div class="card">
-  <button onclick="salvar()">Salvar Checklist</button>
+<textarea id="obsFinal" maxlength="50" placeholder="Observação final (máx 50 caracteres)"></textarea>
 </div>
 
 <div class="card">
-  <h3>Histórico</h3>
-  <div id="historico"></div>
+<button onclick="resumo()">👁 Visualizar Resumo</button>
+<button onclick="gerarPDF()">📄 Gerar PDF</button>
+<button onclick="enviar()">📤 Enviar</button>
 </div>
 
 <div class="card">
-  <h3>Gerar PDF</h3>
-  <select id="qtdPDF">
-    <option value="1">Último checklist</option>
-    <option value="3">Últimos 3</option>
-    <option value="10">Últimos 10</option>
-  </select>
-  <button onclick="gerarPDF()">Gerar PDF</button>
-</div>
-
+<h3>Resumo</h3>
+<div id="resumoBox"></div>
 </div>
 
 <script>
-
-// VEÍCULO FIXO
-const veiculo = {
-  modelo:"GOL",
-  placa:"QUP6243",
-  historico: JSON.parse(localStorage.getItem("historicoGOL")||"[]")
-};
 
 const itens = [
 "TRANCAS","DOCUMENTO","CINTO","FREIO","BUZINA",
 "PNEUS","LUZES","ÓLEO","RADIADOR","LIMPEZA"
 ];
 
-// LOGIN
-function login(){
+let pdfBlob = null;
 
-  let senha = senhaLogin.value.trim().toUpperCase();
-
-  if(senha !== veiculo.placa){
-    alert("Placa incorreta");
-    return;
-  }
-
-  loginBox.classList.add("hidden");
-  sistema.classList.remove("hidden");
-
-  renderChecklist();
-  renderHistorico();
-}
-
-// CHECKLIST
 function renderChecklist(){
   checklist.innerHTML="";
   itens.forEach((item,i)=>{
     checklist.innerHTML+=`
-      <div>
+      <div class="item">
         <label>${item}</label>
         <select id="i${i}">
           <option>Aprovado</option>
@@ -120,89 +88,130 @@ function renderChecklist(){
   });
 }
 
-// SALVAR
-function salvar(){
+renderChecklist();
 
-  let dados = itens.map((item,i)=>{
+// VALIDAÇÃO
+function validarCampos(){
+
+  if(!tipo.value) return "Selecione o tipo de checklist";
+  if(!usuario.value) return "Preencha o nome";
+  if(!veiculo.value) return "Preencha o veículo";
+  if(!placa.value) return "Preencha a placa";
+  if(!km.value) return "Preencha o KM";
+
+  return null;
+}
+
+// RESUMO
+function resumo(){
+
+  let erro = validarCampos();
+  if(erro){ alert(erro); return; }
+
+  let html = `
+  <b>Tipo:</b> ${tipo.value}<br>
+  <b>Usuário:</b> ${usuario.value}<br>
+  <b>Veículo:</b> ${veiculo.value}<br>
+  <b>Placa:</b> ${placa.value}<br>
+  <b>KM:</b> ${km.value}<br>
+  <b>Data:</b> ${dataHora.value}<br>
+  <b>Local:</b> ${local.value}<br><br>
+  `;
+
+  itens.forEach((item,i)=>{
+    let status = document.getElementById("i"+i).value;
+    let obs = document.getElementById("obs"+i).value;
+
+    html += `${item}: ${status} ${obs ? "- "+obs : ""}<br>`;
+  });
+
+  html += `<br><b>Obs Final:</b> ${obsFinal.value}`;
+
+  resumoBox.innerHTML = html;
+}
+
+// PDF
+async function gerarPDF(){
+
+  let erro = validarCampos();
+  if(erro){ alert(erro); return; }
+
+  const {jsPDF} = window.jspdf;
+  const pdf = new jsPDF();
+
+  let y=10;
+
+  pdf.text("CHECKLIST VEICULAR",10,y); y+=10;
+
+  pdf.text(`Tipo: ${tipo.value}`,10,y); y+=6;
+  pdf.text(`Usuário: ${usuario.value}`,10,y); y+=6;
+  pdf.text(`Veículo: ${veiculo.value}`,10,y); y+=6;
+  pdf.text(`Placa: ${placa.value}`,10,y); y+=6;
+  pdf.text(`KM: ${km.value}`,10,y); y+=6;
+  pdf.text(`Data: ${dataHora.value}`,10,y); y+=6;
+  pdf.text(`Local: ${local.value}`,10,y); y+=10;
+
+  for(let i=0;i<itens.length;i++){
 
     let status = document.getElementById("i"+i).value;
     let obs = document.getElementById("obs"+i).value;
 
-    if(status==="Reprovado" && !obs){
-      alert("Preencha observação em: "+item);
-      throw "erro";
+    pdf.text(`${itens[i]}: ${status}`,10,y); y+=5;
+
+    if(obs){
+      pdf.text(`Obs: ${obs}`,12,y); y+=5;
     }
 
-    return {item,status,obs};
-  });
+    if(y>260){
+      pdf.addPage();
+      y=10;
+    }
+  }
 
-  veiculo.historico.unshift({
-    motorista:motorista.value,
-    data:data.value,
-    dados
-  });
+  if(obsFinal.value){
+    pdf.text(`Obs Final: ${obsFinal.value}`,10,y);
+  }
 
-  veiculo.historico = veiculo.historico.slice(0,10);
+  const arquivos = [...fotos.files];
 
-  localStorage.setItem("historicoGOL",JSON.stringify(veiculo.historico));
+  for(let f of arquivos){
+    let img = await toBase64(f);
+    pdf.addPage();
+    pdf.addImage(img,"JPEG",10,10,180,100);
+  }
 
-  renderHistorico();
+  pdfBlob = pdf.output("blob");
 
-  alert("Checklist salvo!");
+  alert("PDF gerado!");
 }
 
-// HISTÓRICO
-function renderHistorico(){
-
-  historico.innerHTML="";
-
-  veiculo.historico.forEach(h=>{
-    historico.innerHTML+=`
-      <div class="item">
-        ${h.data} - ${h.motorista}
-      </div>
-    `;
+// BASE64
+function toBase64(file){
+  return new Promise(res=>{
+    const reader = new FileReader();
+    reader.onload = e=>res(e.target.result);
+    reader.readAsDataURL(file);
   });
 }
 
-// PDF
-function gerarPDF(){
+// ENVIAR
+async function enviar(){
 
-  const {jsPDF}=window.jspdf;
-  const pdf=new jsPDF();
+  if(!pdfBlob){
+    alert("Gere o PDF primeiro");
+    return;
+  }
 
-  let qtd = Number(qtdPDF.value);
-  let registros = veiculo.historico.slice(0,qtd);
+  const file = new File([pdfBlob],"Checklist.pdf",{type:"application/pdf"});
 
-  let y=10;
-
-  pdf.text("RELATÓRIO DE FROTA",10,y); y+=10;
-
-  registros.forEach(h=>{
-
-    pdf.text(`Data: ${h.data} - Motorista: ${h.motorista}`,10,y);
-    y+=6;
-
-    h.dados.forEach(d=>{
-      pdf.text(`${d.item}: ${d.status}`,12,y);
-      y+=5;
-
-      if(d.obs){
-        pdf.text(`Obs: ${d.obs}`,14,y);
-        y+=5;
-      }
-
-      if(y>270){
-        pdf.addPage();
-        y=10;
-      }
+  if(navigator.share){
+    await navigator.share({
+      files:[file],
+      title:"Checklist Veicular"
     });
-
-    y+=5;
-
-  });
-
-  pdf.save("Relatorio_Frota.pdf");
+  }else{
+    alert("Compartilhamento não suportado");
+  }
 }
 
 </script>
