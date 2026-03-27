@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Frota Pro</title>
+<title>Frota Pro Inteligente</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -12,141 +12,113 @@
 <style>
 body{font-family:Inter;background:#f4f6f9;padding:15px;}
 .card{background:#fff;padding:16px;border-radius:16px;margin-bottom:12px;}
-input,select,textarea{width:100%;padding:10px;margin-top:6px;border-radius:10px;}
 button{width:100%;padding:12px;margin-top:10px;border:none;border-radius:12px;background:#1976d2;color:#fff;}
-.item{background:#eee;padding:8px;margin-top:6px;border-radius:8px;}
-h2{text-align:center;}
+.alerta{background:#fff3cd;padding:10px;border-radius:10px;margin-top:8px;}
+.falha{background:#fdecea;padding:10px;border-radius:10px;margin-top:8px;}
+.ok{background:#e8f5e9;padding:10px;border-radius:10px;margin-top:8px;}
 </style>
 </head>
 
 <body>
 
-<h2>🚗 Frota Pro</h2>
+<h2>🚗 Frota Inteligente</h2>
 
 <div class="card">
-  <h3>Veículos</h3>
-  <input id="novoVeiculo" placeholder="Placa / Modelo">
-  <button onclick="addVeiculo()">Adicionar veículo</button>
-  <select id="veiculo"></select>
+<input id="veiculo" placeholder="Veículo">
+<input id="motorista" placeholder="Motorista">
+<input type="number" id="kmInicial" placeholder="KM Inicial">
+<input type="number" id="kmFinal" placeholder="KM Final">
 </div>
 
 <div class="card">
-  <h3>Motoristas</h3>
-  <input id="novoMotorista" placeholder="Nome">
-  <button onclick="addMotorista()">Adicionar motorista</button>
-  <select id="motorista"></select>
+<h3>Checklist</h3>
+
+<label><input type="checkbox" id="pneus"> Pneus</label><br>
+<label><input type="checkbox" id="oleo"> Óleo</label><br>
+<label><input type="checkbox" id="freios"> Freios</label><br>
+<label><input type="checkbox" id="luzes"> Luzes</label><br>
+<label><input type="checkbox" id="doc"> Documentos</label><br>
+
+<select id="combustivel">
+<option>Até 1/4</option>
+<option>Entre 1/4 e 1/2</option>
+<option>Acima de 1/2</option>
+<option>Entre 1/2 e 1</option>
+</select>
+
+<label><input type="checkbox" id="limpador"> Limpador</label><br>
+<label><input type="checkbox" id="arrefecimento"> Arrefecimento</label><br>
+
+<select id="limpoDentro">
+<option>Sim</option>
+<option>Não</option>
+</select>
+
+<select id="limpoFora">
+<option>Sim</option>
+<option>Não</option>
+</select>
+
+<button onclick="analisar()">🔍 Analisar Veículo</button>
+
+<div id="resultado"></div>
+
 </div>
 
 <div class="card">
-  <h3>KM</h3>
-  <input type="number" id="kmInicial" placeholder="KM Inicial">
-  <input type="number" id="kmFinal" placeholder="KM Final">
-  <p id="kmRodado"></p>
-</div>
-
-<div class="card">
-  <h3>Checklist</h3>
-  <label><input type="checkbox" id="pneus"> Pneus</label><br>
-  <label><input type="checkbox" id="oleo"> Óleo</label><br>
-  <label><input type="checkbox" id="freios"> Freios</label><br>
-  <label><input type="checkbox" id="luzes"> Luzes</label><br>
-  <label><input type="checkbox" id="doc"> Documentação</label><br>
-  <textarea id="obsChecklist" placeholder="Observações"></textarea>
-</div>
-
-<div class="card">
-  <h3>Registros</h3>
-  <select id="tipo">
-    <option>Abastecimento</option>
-    <option>Manutenção</option>
-    <option>Ocorrência</option>
-  </select>
-  <input id="desc" placeholder="Descrição">
-  <input type="number" id="valor" placeholder="Valor">
-  <button onclick="addRegistro()">Adicionar</button>
-  <div id="lista"></div>
-</div>
-
-<div class="card">
-  <h3>Anexos</h3>
-  <input type="file" id="file" multiple>
-  <div id="anexos"></div>
-</div>
-
-<div class="card">
-  <button onclick="gerarPDF()">📄 Gerar Relatório</button>
-  <button onclick="revisarPDF()">👁 Revisar</button>
-  <button onclick="enviar()">📤 Enviar</button>
+<button onclick="gerarPDF()">📄 Gerar Relatório</button>
+<button onclick="revisarPDF()">👁 Revisar</button>
+<button onclick="enviar()">📤 Enviar</button>
 </div>
 
 <script>
 
-let veiculos = JSON.parse(localStorage.getItem("veiculos")||"[]");
-let motoristas = JSON.parse(localStorage.getItem("motoristas")||"[]");
-let registros = [];
-let anexos = [];
-let pdfBlob = null;
+let pdfBlob=null;
+let falhas=[];
+let alertas=[];
+let status="OK";
 
-// VEICULOS
-function addVeiculo(){
-  veiculos.push(novoVeiculo.value);
-  localStorage.setItem("veiculos",JSON.stringify(veiculos));
-  renderSelects();
-  novoVeiculo.value="";
+function analisar(){
+
+  falhas=[];
+  alertas=[];
+  status="OK";
+
+  if(!pneus.checked) falhas.push("Pneus com problema");
+  if(!oleo.checked) falhas.push("Óleo com problema");
+  if(!freios.checked) falhas.push("Freios com problema");
+  if(!luzes.checked) falhas.push("Luzes com problema");
+  if(!doc.checked) falhas.push("Documentação irregular");
+
+  if(!limpador.checked) falhas.push("Limpador com problema");
+  if(!arrefecimento.checked) falhas.push("Nível de arrefecimento baixo");
+
+  if(limpoDentro.value==="Não") alertas.push("Veículo sujo por dentro");
+  if(limpoFora.value==="Não") alertas.push("Veículo sujo por fora");
+
+  if(combustivel.value==="Até 1/4") alertas.push("Combustível baixo");
+
+  let km = kmFinal.value - kmInicial.value;
+  if(km > 300) alertas.push("Rodagem alta no período");
+
+  if(falhas.length > 3) status="CRÍTICO";
+  else if(falhas.length > 0) status="ATENÇÃO";
+
+  mostrarResultado();
 }
 
-function addMotorista(){
-  motoristas.push(novoMotorista.value);
-  localStorage.setItem("motoristas",JSON.stringify(motoristas));
-  renderSelects();
-  novoMotorista.value="";
-}
+function mostrarResultado(){
 
-function renderSelects(){
-  veiculo.innerHTML = veiculos.map(v=>`<option>${v}</option>`).join("");
-  motorista.innerHTML = motoristas.map(m=>`<option>${m}</option>`).join("");
-}
+  resultado.innerHTML="";
 
-renderSelects();
+  resultado.innerHTML += `<div class="${status==="OK"?"ok":"falha"}">Status: ${status}</div>`;
 
-// KM
-kmFinal.oninput = ()=>{
-  kmRodado.innerText = "KM Rodado: " + (kmFinal.value - kmInicial.value);
-}
-
-// REGISTROS
-function addRegistro(){
-  registros.push({
-    tipo:tipo.value,
-    desc:desc.value,
-    valor:Number(valor.value)||0
+  falhas.forEach(f=>{
+    resultado.innerHTML += `<div class="falha">❌ ${f}</div>`;
   });
-  render();
-}
 
-function render(){
-  lista.innerHTML="";
-  registros.forEach(r=>{
-    lista.innerHTML+=`<div class="item">${r.tipo} - ${r.desc} - R$ ${r.valor}</div>`;
-  });
-}
-
-// ANEXOS
-file.onchange=()=>{
-  [...file.files].forEach(f=>{
-    const r=new FileReader();
-    r.onload=e=>{
-      anexos.push(e.target.result);
-      anexosRender();
-    }
-    r.readAsDataURL(f);
-  });
-}
-
-function anexosRender(){
-  anexos.innerHTML="";
-  anexos.forEach(img=>{
-    anexos.innerHTML+=`<img src="${img}" width="100%">`;
+  alertas.forEach(a=>{
+    resultado.innerHTML += `<div class="alerta">⚠️ ${a}</div>`;
   });
 }
 
@@ -157,34 +129,29 @@ function gerarPDF(){
   const pdf=new jsPDF();
   let y=10;
 
-  pdf.text("RELATÓRIO DE FROTA",10,y); y+=10;
+  pdf.text("RELATÓRIO INTELIGENTE",10,y); y+=10;
 
   pdf.text(`Veículo: ${veiculo.value}`,10,y); y+=8;
   pdf.text(`Motorista: ${motorista.value}`,10,y); y+=8;
 
-  pdf.text(`KM Inicial: ${kmInicial.value}`,10,y); y+=8;
-  pdf.text(`KM Final: ${kmFinal.value}`,10,y); y+=8;
   pdf.text(`KM Rodado: ${kmFinal.value - kmInicial.value}`,10,y); y+=10;
 
-  pdf.text("Checklist",10,y); y+=8;
+  pdf.text(`STATUS: ${status}`,10,y); y+=10;
 
-  pdf.text(`Pneus: ${pneus.checked?"OK":"Problema"}`,10,y); y+=6;
-  pdf.text(`Óleo: ${oleo.checked?"OK":"Problema"}`,10,y); y+=6;
-  pdf.text(`Freios: ${freios.checked?"OK":"Problema"}`,10,y); y+=6;
-  pdf.text(`Luzes: ${luzes.checked?"OK":"Problema"}`,10,y); y+=6;
-  pdf.text(`Documentos: ${doc.checked?"OK":"Problema"}`,10,y); y+=10;
-
-  registros.forEach(r=>{
-    pdf.text(`${r.tipo} - ${r.desc} - R$ ${r.valor}`,10,y);
+  pdf.text("FALHAS:",10,y); y+=8;
+  falhas.forEach(f=>{
+    pdf.text(`- ${f}`,10,y);
     y+=6;
   });
 
-  anexos.forEach(img=>{
-    pdf.addPage();
-    pdf.addImage(img,"JPEG",10,10,180,100);
+  pdf.text("ALERTAS:",10,y); y+=8;
+  alertas.forEach(a=>{
+    pdf.text(`- ${a}`,10,y);
+    y+=6;
   });
 
   pdfBlob = pdf.output("blob");
+
   alert("Relatório gerado!");
 }
 
@@ -196,14 +163,15 @@ function revisarPDF(){
 
 // ENVIAR
 async function enviar(){
+
   if(!pdfBlob) return alert("Gere primeiro!");
 
-  const file=new File([pdfBlob],"Relatorio_Frota.pdf",{type:"application/pdf"});
+  const file=new File([pdfBlob],"Relatorio_Inteligente.pdf",{type:"application/pdf"});
 
   if(navigator.share){
     await navigator.share({
       files:[file],
-      title:"Relatório de Frota"
+      title:"Relatório Frota"
     });
   }else{
     alert("Não suportado.");
@@ -213,4 +181,4 @@ async function enviar(){
 </script>
 
 </body>
-</html>
+  </html>
