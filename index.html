@@ -66,15 +66,41 @@ img{width:100%;margin-top:5px;border-radius:8px;}
 
 <script>
 
+// ✅ CHECKLIST COMPLETO RESTAURADO
 const itens = [
-"TRANCAS","DOCUMENTO","CINTO","FREIO","BUZINA",
-"PNEUS","LUZES","ÓLEO","RADIADOR","LIMPEZA"
+"TRANCAS E ALARMES",
+"DOCUMENTO DO VEÍCULO",
+"CINTO DE SEGURANÇA",
+"FREIO DE MÃO",
+"BUZINA",
+"MACACO MECÂNICO",
+"TRIÂNGULO",
+"AR CONDICIONADO",
+"LUZES DO PAINEL",
+"FAROL BAIXO",
+"FAROL ALTO",
+"LUZ DE RÉ",
+"LUZ DE FREIO",
+"PISCA ALERTA",
+"SETAS",
+"PARA-BRISA E VIDROS",
+"PNEUS",
+"CALIBRAGEM PNEUS",
+"ESTEPE",
+"RETROVISORES",
+"LENTE DO FAROL",
+"PALHETAS",
+"NIVEL DE ÓLEO",
+"FLUÍDO DO RADIADOR",
+"AGUA DO PARA-BRISA",
+"LIMPEZA EXTERNA",
+"LIMPEZA INTERNA"
 ];
 
 let fotosBase64 = [];
 let pdfBlob = null;
 
-// CHECKLIST
+// RENDER
 function renderChecklist(){
   checklist.innerHTML="";
   itens.forEach((item,i)=>{
@@ -84,6 +110,7 @@ function renderChecklist(){
         <select id="i${i}">
           <option>Aprovado</option>
           <option>Reprovado</option>
+          <option>N/A</option>
         </select>
         <textarea id="obs${i}" placeholder="Observação"></textarea>
       </div>
@@ -92,15 +119,12 @@ function renderChecklist(){
 }
 renderChecklist();
 
-// PREVIEW FOTOS
+// FOTOS
 function previewFotos(){
-
   preview.innerHTML="";
   fotosBase64=[];
 
-  const arquivos = [...fotos.files];
-
-  arquivos.forEach(f=>{
+  [...fotos.files].forEach(f=>{
     const reader = new FileReader();
     reader.onload = e=>{
       fotosBase64.push(e.target.result);
@@ -112,13 +136,11 @@ function previewFotos(){
 
 // VALIDAÇÃO
 function validar(){
-
   if(!tipo.value) return "Selecione tipo";
   if(!usuario.value) return "Preencha usuário";
   if(!veiculo.value) return "Preencha veículo";
   if(!placa.value) return "Preencha placa";
   if(!km.value) return "Preencha KM";
-
   return null;
 }
 
@@ -141,15 +163,12 @@ function resumo(){
   itens.forEach((item,i)=>{
     let status = document.getElementById("i"+i).value;
     let obs = document.getElementById("obs"+i).value;
-
     html += `${item}: ${status} ${obs ? "- "+obs : ""}<br>`;
   });
 
   if(fotosBase64.length){
     html += "<br><b>Fotos:</b><br>";
-    fotosBase64.forEach(f=>{
-      html += `<img src="${f}">`;
-    });
+    fotosBase64.forEach(f=> html += `<img src="${f}">`);
   }
 
   html += `<br><b>Obs Final:</b> ${obsFinal.value}`;
@@ -168,7 +187,6 @@ async function gerarPDF(){
 
   let y=10;
 
-  // CABEÇALHO
   pdf.setFontSize(14);
   pdf.text("Relatório de uso de frota",10,y); y+=6;
   pdf.text("Cirurtec Hospitalar Ltda",10,y); y+=10;
@@ -184,5 +202,56 @@ async function gerarPDF(){
   pdf.text(`Local: ${local.value}`,10,y); y+=10;
 
   for(let i=0;i<itens.length;i++){
+    let status = document.getElementById("i"+i).value;
+    let obs = document.getElementById("obs"+i).value;
 
-    let status = document.getElementById("
+    pdf.text(`${itens[i]}: ${status}`,10,y); y+=5;
+
+    if(obs){
+      pdf.text(`Obs: ${obs}`,12,y); y+=5;
+    }
+
+    if(y>260){
+      pdf.addPage();
+      y=10;
+    }
+  }
+
+  if(obsFinal.value){
+    pdf.text(`Obs Final: ${obsFinal.value}`,10,y);
+  }
+
+  for(let img of fotosBase64){
+    pdf.addPage();
+    pdf.addImage(img,"JPEG",10,10,180,100);
+  }
+
+  pdfBlob = pdf.output("blob");
+
+  pdf.save("Checklist_Frota.pdf");
+}
+
+// ENVIAR
+async function enviar(){
+
+  if(!pdfBlob){
+    alert("Gere o PDF primeiro");
+    return;
+  }
+
+  const file = new File([pdfBlob],"Checklist_Frota.pdf",{type:"application/pdf"});
+
+  if(navigator.share){
+    await navigator.share({
+      files:[file],
+      title:"Checklist Frota"
+    });
+  }else{
+    alert("Compartilhamento não suportado");
+  }
+}
+
+</script>
+
+</body>
+</html>
