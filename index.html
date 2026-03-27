@@ -14,6 +14,7 @@ body{font-family:Arial;background:#f4f6f9;padding:15px;}
 input,select,textarea{width:100%;padding:8px;margin-top:5px;border-radius:8px;}
 button{width:100%;padding:12px;margin-top:10px;background:#1976d2;color:#fff;border:none;border-radius:10px;}
 .item{background:#eee;padding:8px;margin-top:6px;border-radius:8px;}
+img{width:100%;margin-top:5px;border-radius:8px;}
 </style>
 </head>
 
@@ -31,9 +32,8 @@ button{width:100%;padding:12px;margin-top:10px;background:#1976d2;color:#fff;bor
 </select>
 
 <input id="usuario" placeholder="Nome do usuário">
-<input id="veiculo" placeholder="Veículo (ex: Gol)">
+<input id="veiculo" placeholder="Veículo">
 <input id="placa" placeholder="Placa">
-
 <input id="km" type="number" placeholder="KM do veículo">
 
 <input type="datetime-local" id="dataHora">
@@ -45,7 +45,8 @@ button{width:100%;padding:12px;margin-top:10px;background:#1976d2;color:#fff;bor
 
 <div class="card">
 <h3>Fotos</h3>
-<input type="file" id="fotos" multiple accept="image/*">
+<input type="file" id="fotos" multiple accept="image/*" onchange="previewFotos()">
+<div id="preview"></div>
 </div>
 
 <div class="card">
@@ -54,7 +55,7 @@ button{width:100%;padding:12px;margin-top:10px;background:#1976d2;color:#fff;bor
 
 <div class="card">
 <button onclick="resumo()">👁 Visualizar Resumo</button>
-<button onclick="gerarPDF()">📄 Gerar PDF</button>
+<button onclick="gerarPDF()">📄 Gerar e Baixar PDF</button>
 <button onclick="enviar()">📤 Enviar</button>
 </div>
 
@@ -70,8 +71,10 @@ const itens = [
 "PNEUS","LUZES","ÓLEO","RADIADOR","LIMPEZA"
 ];
 
+let fotosBase64 = [];
 let pdfBlob = null;
 
+// CHECKLIST
 function renderChecklist(){
   checklist.innerHTML="";
   itens.forEach((item,i)=>{
@@ -87,17 +90,34 @@ function renderChecklist(){
     `;
   });
 }
-
 renderChecklist();
 
-// VALIDAÇÃO
-function validarCampos(){
+// PREVIEW FOTOS
+function previewFotos(){
 
-  if(!tipo.value) return "Selecione o tipo de checklist";
-  if(!usuario.value) return "Preencha o nome";
-  if(!veiculo.value) return "Preencha o veículo";
-  if(!placa.value) return "Preencha a placa";
-  if(!km.value) return "Preencha o KM";
+  preview.innerHTML="";
+  fotosBase64=[];
+
+  const arquivos = [...fotos.files];
+
+  arquivos.forEach(f=>{
+    const reader = new FileReader();
+    reader.onload = e=>{
+      fotosBase64.push(e.target.result);
+      preview.innerHTML += `<img src="${e.target.result}">`;
+    }
+    reader.readAsDataURL(f);
+  });
+}
+
+// VALIDAÇÃO
+function validar(){
+
+  if(!tipo.value) return "Selecione tipo";
+  if(!usuario.value) return "Preencha usuário";
+  if(!veiculo.value) return "Preencha veículo";
+  if(!placa.value) return "Preencha placa";
+  if(!km.value) return "Preencha KM";
 
   return null;
 }
@@ -105,7 +125,7 @@ function validarCampos(){
 // RESUMO
 function resumo(){
 
-  let erro = validarCampos();
+  let erro = validar();
   if(erro){ alert(erro); return; }
 
   let html = `
@@ -125,6 +145,13 @@ function resumo(){
     html += `${item}: ${status} ${obs ? "- "+obs : ""}<br>`;
   });
 
+  if(fotosBase64.length){
+    html += "<br><b>Fotos:</b><br>";
+    fotosBase64.forEach(f=>{
+      html += `<img src="${f}">`;
+    });
+  }
+
   html += `<br><b>Obs Final:</b> ${obsFinal.value}`;
 
   resumoBox.innerHTML = html;
@@ -133,7 +160,7 @@ function resumo(){
 // PDF
 async function gerarPDF(){
 
-  let erro = validarCampos();
+  let erro = validar();
   if(erro){ alert(erro); return; }
 
   const {jsPDF} = window.jspdf;
@@ -141,7 +168,12 @@ async function gerarPDF(){
 
   let y=10;
 
-  pdf.text("CHECKLIST VEICULAR",10,y); y+=10;
+  // CABEÇALHO
+  pdf.setFontSize(14);
+  pdf.text("Relatório de uso de frota",10,y); y+=6;
+  pdf.text("Cirurtec Hospitalar Ltda",10,y); y+=10;
+
+  pdf.setFontSize(10);
 
   pdf.text(`Tipo: ${tipo.value}`,10,y); y+=6;
   pdf.text(`Usuário: ${usuario.value}`,10,y); y+=6;
@@ -153,68 +185,4 @@ async function gerarPDF(){
 
   for(let i=0;i<itens.length;i++){
 
-    let status = document.getElementById("i"+i).value;
-    let obs = document.getElementById("obs"+i).value;
-
-    pdf.text(`${itens[i]}: ${status}`,10,y); y+=5;
-
-    if(obs){
-      pdf.text(`Obs: ${obs}`,12,y); y+=5;
-    }
-
-    if(y>260){
-      pdf.addPage();
-      y=10;
-    }
-  }
-
-  if(obsFinal.value){
-    pdf.text(`Obs Final: ${obsFinal.value}`,10,y);
-  }
-
-  const arquivos = [...fotos.files];
-
-  for(let f of arquivos){
-    let img = await toBase64(f);
-    pdf.addPage();
-    pdf.addImage(img,"JPEG",10,10,180,100);
-  }
-
-  pdfBlob = pdf.output("blob");
-
-  alert("PDF gerado!");
-}
-
-// BASE64
-function toBase64(file){
-  return new Promise(res=>{
-    const reader = new FileReader();
-    reader.onload = e=>res(e.target.result);
-    reader.readAsDataURL(file);
-  });
-}
-
-// ENVIAR
-async function enviar(){
-
-  if(!pdfBlob){
-    alert("Gere o PDF primeiro");
-    return;
-  }
-
-  const file = new File([pdfBlob],"Checklist.pdf",{type:"application/pdf"});
-
-  if(navigator.share){
-    await navigator.share({
-      files:[file],
-      title:"Checklist Veicular"
-    });
-  }else{
-    alert("Compartilhamento não suportado");
-  }
-}
-
-</script>
-
-</body>
-</html>
+    let status = document.getElementById("
