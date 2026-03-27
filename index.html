@@ -4,9 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Frota Pro - Sistema Oficial</title>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<title>Controle de frota Cirurtec</title>
 
 <style>
 body{font-family:Arial;background:#f4f6f9;padding:15px;}
@@ -14,7 +12,9 @@ body{font-family:Arial;background:#f4f6f9;padding:15px;}
 input,select,textarea{width:100%;padding:8px;margin-top:5px;border-radius:8px;}
 button{width:100%;padding:12px;margin-top:10px;background:#1976d2;color:#fff;border:none;border-radius:10px;}
 .hidden{display:none;}
-.item{background:#eee;padding:8px;margin-top:6px;border-radius:8px;}
+.item{background:#eee;padding:10px;margin-top:6px;border-radius:8px;cursor:pointer;}
+.detalhe{background:#fafafa;padding:10px;margin-top:10px;border-radius:8px;}
+img{width:100%;margin-top:5px;border-radius:8px;}
 </style>
 </head>
 
@@ -33,8 +33,8 @@ button{width:100%;padding:12px;margin-top:10px;background:#1976d2;color:#fff;bor
 <!-- CADASTRO -->
 <div class="card">
   <h3>Cadastrar Veículo</h3>
-  <input id="modelo" placeholder="Modelo (usuário)">
-  <input id="placa" placeholder="Placa (senha)">
+  <input id="modelo" placeholder="Modelo">
+  <input id="placa" placeholder="Placa">
   <button onclick="cadastrar()">Cadastrar</button>
 </div>
 
@@ -64,6 +64,11 @@ button{width:100%;padding:12px;margin-top:10px;background:#1976d2;color:#fff;bor
 <div class="card">
   <h3>Últimos 10 registros</h3>
   <div id="historico"></div>
+</div>
+
+<div class="card">
+  <h3>Detalhes do Checklist</h3>
+  <div id="detalhe"></div>
 </div>
 
 </div>
@@ -145,32 +150,45 @@ function salvar(){
   });
 
   let fotosArray = [];
-  [...fotos.files].forEach(f=>{
+
+  const arquivos = [...fotos.files];
+  let lidos = 0;
+
+  if(arquivos.length === 0){
+    finalizarSave(dados, fotosArray);
+    return;
+  }
+
+  arquivos.forEach(f=>{
     const reader = new FileReader();
     reader.onload = e=>{
       fotosArray.push(e.target.result);
+      lidos++;
+
+      if(lidos === arquivos.length){
+        finalizarSave(dados, fotosArray);
+      }
     }
     reader.readAsDataURL(f);
   });
+}
 
-  setTimeout(()=>{
+function finalizarSave(dados, fotosArray){
 
-    atual.historico.unshift({
-      motorista:motorista.value,
-      data:data.value,
-      dados,
-      fotos:fotosArray
-    });
+  atual.historico.unshift({
+    motorista:motorista.value,
+    data:data.value,
+    dados,
+    fotos:fotosArray
+  });
 
-    atual.historico = atual.historico.slice(0,10);
+  atual.historico = atual.historico.slice(0,10);
 
-    localStorage.setItem("veiculos",JSON.stringify(veiculos));
+  localStorage.setItem("veiculos",JSON.stringify(veiculos));
 
-    renderHistorico();
+  renderHistorico();
 
-    alert("Checklist salvo!");
-
-  },500);
+  alert("Checklist salvo!");
 }
 
 // HISTÓRICO
@@ -178,12 +196,38 @@ function renderHistorico(){
 
   historico.innerHTML="";
 
-  atual.historico.forEach(h=>{
+  atual.historico.forEach((h,i)=>{
     historico.innerHTML+=`
-      <div class="item">
+      <div class="item" onclick="abrir(${i})">
         ${h.data} - ${h.motorista}
       </div>
     `;
+  });
+}
+
+// ABRIR DETALHE
+function abrir(i){
+
+  let h = atual.historico[i];
+
+  detalhe.innerHTML = `
+    <div class="detalhe">
+      <b>Motorista:</b> ${h.motorista}<br>
+      <b>Data:</b> ${h.data}<br><br>
+    </div>
+  `;
+
+  h.dados.forEach(d=>{
+    detalhe.innerHTML += `
+      <div class="detalhe">
+        ${d.item}: ${d.status}<br>
+        ${d.obs ? "Obs: "+d.obs : ""}
+      </div>
+    `;
+  });
+
+  h.fotos.forEach(img=>{
+    detalhe.innerHTML += `<img src="${img}">`;
   });
 }
 
