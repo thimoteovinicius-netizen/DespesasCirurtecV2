@@ -4,7 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Frota Pro - Sistema</title>
+<title>Frota Pro - Sistema Oficial</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
 body{font-family:Arial;background:#f4f6f9;padding:15px;}
@@ -12,48 +14,55 @@ body{font-family:Arial;background:#f4f6f9;padding:15px;}
 input,select,textarea{width:100%;padding:8px;margin-top:5px;border-radius:8px;}
 button{width:100%;padding:12px;margin-top:10px;background:#1976d2;color:#fff;border:none;border-radius:10px;}
 .hidden{display:none;}
-.item{padding:8px;background:#eee;margin-top:6px;border-radius:8px;}
+.item{background:#eee;padding:8px;margin-top:6px;border-radius:8px;}
 </style>
 </head>
 
 <body>
 
-<h2>🚗 Frota Pro</h2>
+<h2>🚗 Sistema de Frota</h2>
 
 <!-- LOGIN -->
 <div class="card" id="loginBox">
-  <h3>Login por Veículo</h3>
-
+  <h3>Login</h3>
   <select id="veiculoLogin"></select>
-  <input id="senhaLogin" placeholder="Senha">
-
+  <input id="senhaLogin" placeholder="Placa">
   <button onclick="login()">Entrar</button>
 </div>
 
 <!-- CADASTRO -->
 <div class="card">
   <h3>Cadastrar Veículo</h3>
-  <input id="novoVeiculo" placeholder="Placa / Nome">
-  <input id="usuario" placeholder="Responsável">
-  <input id="senha" placeholder="Senha">
-  <button onclick="addVeiculo()">Cadastrar</button>
+  <input id="modelo" placeholder="Modelo (usuário)">
+  <input id="placa" placeholder="Placa (senha)">
+  <button onclick="cadastrar()">Cadastrar</button>
 </div>
 
 <!-- SISTEMA -->
 <div id="sistema" class="hidden">
 
 <div class="card">
-  <h3 id="infoVeiculo"></h3>
+  <h3 id="info"></h3>
+</div>
+
+<div class="card">
+  <input id="motorista" placeholder="Motorista do dia">
+  <input type="date" id="data">
 </div>
 
 <div class="card" id="checklist"></div>
 
 <div class="card">
-  <button onclick="salvarChecklist()">Salvar Checklist</button>
+  <h3>Fotos</h3>
+  <input type="file" id="fotos" multiple>
 </div>
 
 <div class="card">
-  <h3>Histórico</h3>
+  <button onclick="salvar()">Salvar Checklist</button>
+</div>
+
+<div class="card">
+  <h3>Últimos 10 registros</h3>
   <div id="historico"></div>
 </div>
 
@@ -61,7 +70,6 @@ button{width:100%;padding:12px;margin-top:10px;background:#1976d2;color:#fff;bor
 
 <script>
 
-// DADOS
 let veiculos = JSON.parse(localStorage.getItem("veiculos")||"[]");
 let atual = null;
 
@@ -70,39 +78,34 @@ const itens = [
 "PNEUS","LUZES","ÓLEO","RADIADOR","LIMPEZA"
 ];
 
-// RENDER LOGIN
+// LOGIN
 function renderLogin(){
-  veiculoLogin.innerHTML = veiculos.map(v=>`<option>${v.nome}</option>`).join("");
+  veiculoLogin.innerHTML = veiculos.map(v=>`<option>${v.modelo}</option>`).join("");
 }
 renderLogin();
 
-// CADASTRO
-function addVeiculo(){
+function cadastrar(){
   veiculos.push({
-    nome:novoVeiculo.value,
-    usuario:usuario.value,
-    senha:senha.value,
+    modelo:modelo.value,
+    placa:placa.value,
     historico:[]
   });
 
   localStorage.setItem("veiculos",JSON.stringify(veiculos));
   renderLogin();
-
   alert("Veículo cadastrado!");
 }
 
-// LOGIN
 function login(){
-  let v = veiculos.find(v=>v.nome===veiculoLogin.value && v.senha===senhaLogin.value);
-
-  if(!v) return alert("Senha incorreta");
+  let v = veiculos.find(v=>v.modelo===veiculoLogin.value && v.placa===senhaLogin.value);
+  if(!v) return alert("Erro no login");
 
   atual = v;
 
   loginBox.classList.add("hidden");
   sistema.classList.remove("hidden");
 
-  infoVeiculo.innerText = `Veículo: ${v.nome} | Responsável: ${v.usuario}`;
+  info.innerText = `Veículo: ${v.modelo}`;
 
   renderChecklist();
   renderHistorico();
@@ -111,7 +114,6 @@ function login(){
 // CHECKLIST
 function renderChecklist(){
   checklist.innerHTML="";
-
   itens.forEach((item,i)=>{
     checklist.innerHTML+=`
       <div>
@@ -127,24 +129,48 @@ function renderChecklist(){
 }
 
 // SALVAR
-function salvarChecklist(){
+function salvar(){
 
-  let dados = itens.map((item,i)=>({
-    item,
-    status:document.getElementById("i"+i).value,
-    obs:document.getElementById("obs"+i).value
-  }));
+  let dados = itens.map((item,i)=>{
 
-  atual.historico.push({
-    data:new Date().toLocaleString(),
-    dados
+    let status = document.getElementById("i"+i).value;
+    let obs = document.getElementById("obs"+i).value;
+
+    if(status==="Reprovado" && !obs){
+      alert("Preencha observação em: "+item);
+      throw "erro";
+    }
+
+    return {item,status,obs};
   });
 
-  localStorage.setItem("veiculos",JSON.stringify(veiculos));
+  let fotosArray = [];
+  [...fotos.files].forEach(f=>{
+    const reader = new FileReader();
+    reader.onload = e=>{
+      fotosArray.push(e.target.result);
+    }
+    reader.readAsDataURL(f);
+  });
 
-  renderHistorico();
+  setTimeout(()=>{
 
-  alert("Salvo com sucesso!");
+    atual.historico.unshift({
+      motorista:motorista.value,
+      data:data.value,
+      dados,
+      fotos:fotosArray
+    });
+
+    atual.historico = atual.historico.slice(0,10);
+
+    localStorage.setItem("veiculos",JSON.stringify(veiculos));
+
+    renderHistorico();
+
+    alert("Checklist salvo!");
+
+  },500);
 }
 
 // HISTÓRICO
@@ -155,7 +181,7 @@ function renderHistorico(){
   atual.historico.forEach(h=>{
     historico.innerHTML+=`
       <div class="item">
-        ${h.data}
+        ${h.data} - ${h.motorista}
       </div>
     `;
   });
