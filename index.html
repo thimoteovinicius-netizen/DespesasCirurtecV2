@@ -48,7 +48,10 @@ img{width:100%;margin-top:5px;border-radius:8px;}
 
 <div class="card">
 <h3>Fotos</h3>
-<input type="file" id="fotos" multiple accept="image/*" onchange="previewFotos()">
+
+<button onclick="adicionarFoto()">📷 Adicionar Foto</button>
+<input type="file" id="fileInput" accept="image/*" style="display:none">
+
 <div id="preview"></div>
 </div>
 
@@ -69,6 +72,7 @@ img{width:100%;margin-top:5px;border-radius:8px;}
 
 <script>
 
+// CHECKLIST COMPLETO
 const itens = [
 "TRANCAS E ALARMES","DOCUMENTO DO VEÍCULO","CINTO DE SEGURANÇA",
 "FREIO DE MÃO","BUZINA","MACACO MECÂNICO","TRIÂNGULO",
@@ -83,7 +87,7 @@ const itens = [
 let fotosBase64=[];
 let pdfBlob=null;
 
-// RENDER
+// RENDER CHECKLIST
 function renderChecklist(){
   checklist.innerHTML="";
   itens.forEach((item,i)=>{
@@ -102,7 +106,7 @@ function renderChecklist(){
 }
 renderChecklist();
 
-// COR DINÂMICA
+// COR VISUAL
 function cor(i){
   let val=document.getElementById("i"+i).value;
   let box=document.getElementById("box"+i);
@@ -114,20 +118,33 @@ function cor(i){
   else box.classList.add("na");
 }
 
-// FOTOS
-function previewFotos(){
-  preview.innerHTML="";
-  fotosBase64=[];
-
-  [...fotos.files].forEach(f=>{
-    const reader=new FileReader();
-    reader.onload=e=>{
-      fotosBase64.push(e.target.result);
-      preview.innerHTML+=`<img src="${e.target.result}">`;
-    }
-    reader.readAsDataURL(f);
-  });
+// 📷 ADICIONAR FOTO (SEM SUBSTITUIR)
+function adicionarFoto(){
+  document.getElementById("fileInput").click();
 }
+
+document.getElementById("fileInput").addEventListener("change", function(){
+
+  const arquivo=this.files[0];
+  if(!arquivo) return;
+
+  const reader=new FileReader();
+
+  reader.onload=function(e){
+
+    fotosBase64.push(e.target.result);
+
+    preview.innerHTML+=`
+      <div>
+        <img src="${e.target.result}">
+      </div>
+    `;
+  }
+
+  reader.readAsDataURL(arquivo);
+
+  this.value="";
+});
 
 // VALIDAÇÃO
 function validar(){
@@ -137,6 +154,38 @@ function validar(){
   if(!placa.value) return "Preencha placa";
   if(!km.value) return "Preencha KM";
   return null;
+}
+
+// RESUMO
+function resumo(){
+
+  let erro=validar();
+  if(erro){alert(erro);return;}
+
+  let html=`
+  <b>Tipo:</b> ${tipo.value}<br>
+  <b>Usuário:</b> ${usuario.value}<br>
+  <b>Veículo:</b> ${veiculo.value}<br>
+  <b>Placa:</b> ${placa.value}<br>
+  <b>KM:</b> ${km.value}<br>
+  <b>Data:</b> ${dataHora.value}<br>
+  <b>Local:</b> ${local.value}<br><br>
+  `;
+
+  itens.forEach((item,i)=>{
+    let status=document.getElementById("i"+i).value;
+    let obs=document.getElementById("obs"+i).value;
+    html+=`${item}: ${status} ${obs?"- "+obs:""}<br>`;
+  });
+
+  if(fotosBase64.length){
+    html+="<br><b>Fotos:</b><br>";
+    fotosBase64.forEach(f=> html+=`<img src="${f}">`);
+  }
+
+  html+=`<br><b>Obs Final:</b> ${obsFinal.value}`;
+
+  resumoBox.innerHTML=html;
 }
 
 // PDF
@@ -164,7 +213,6 @@ async function gerarPDF(){
   pdf.text(`Data: ${dataHora.value}`,10,y); y+=6;
   pdf.text(`Local: ${local.value}`,10,y); y+=10;
 
-  // CABEÇALHO TABELA
   pdf.text("ITEM",10,y);
   pdf.text("STATUS",120,y);
   pdf.text("OBS",150,y);
@@ -175,7 +223,6 @@ async function gerarPDF(){
     let status=document.getElementById("i"+i).value;
     let obs=document.getElementById("obs"+i).value;
 
-    // COR TEXTO
     if(status==="Aprovado") pdf.setTextColor(0,150,0);
     else if(status==="Reprovado") pdf.setTextColor(200,0,0);
     else pdf.setTextColor(0,0,0);
@@ -197,7 +244,6 @@ async function gerarPDF(){
     }
   }
 
-  // FOTOS
   for(let img of fotosBase64){
     pdf.addPage();
     pdf.addImage(img,"JPEG",10,10,180,100);
