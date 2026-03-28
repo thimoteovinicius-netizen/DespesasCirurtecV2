@@ -4,76 +4,103 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Checklist Veicular</title>
+<title>Checklist Frota</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
-body{font-family:Arial;background:#f4f6f9;padding:15px;}
+body{font-family:Arial;background:#f4f6f9;padding:10px;}
+.page{display:none;}
+.page.active{display:block;}
 .card{background:#fff;padding:15px;border-radius:12px;margin-bottom:12px;}
-input,select,textarea{width:100%;padding:8px;margin-top:5px;border-radius:8px;}
 button{width:100%;padding:12px;margin-top:10px;background:#1976d2;color:#fff;border:none;border-radius:10px;}
+input,select,textarea{width:100%;padding:8px;margin-top:5px;border-radius:8px;}
 .item{padding:10px;margin-top:6px;border-radius:8px;}
 .aprovado{background:#e8f5e9;}
 .reprovado{background:#fdecea;}
-.na{background:#eeeeee;}
+.na{background:#eee;}
 img{width:100%;margin-top:5px;border-radius:8px;}
+canvas{border:1px solid #ccc;width:100%;height:150px;}
 </style>
 </head>
 
 <body>
 
-<h2>🚗 Checklist Veicular</h2>
+<h2>🚗 Checklist Frota</h2>
 
+<!-- PAG 1 -->
+<div id="p1" class="page active">
 <div class="card">
 
-<label>Tipo de Checklist</label>
 <select id="tipo">
-  <option value="">Selecione</option>
-  <option>Check list inicial</option>
-  <option>Check list final</option>
+<option value="">Tipo</option>
+<option>Check list inicial</option>
+<option>Check list final</option>
 </select>
 
-<input id="usuario" placeholder="Nome do usuário">
+<input id="usuario" placeholder="Motorista">
 <input id="veiculo" placeholder="Veículo">
 <input id="placa" placeholder="Placa">
-<input id="km" type="number" placeholder="KM do veículo">
+<input id="km" type="number" placeholder="KM">
 
 <input type="datetime-local" id="dataHora">
-<input id="local" placeholder="Local da vistoria">
+<input id="local" placeholder="Local">
 
 </div>
+<button onclick="irPara(2)">➡️ Próximo</button>
+</div>
 
+<!-- PAG 2 -->
+<div id="p2" class="page">
 <div class="card" id="checklist"></div>
 
+<button onclick="irPara(1)">⬅️ Voltar</button>
+<button onclick="irPara(3)">➡️ Próximo</button>
+</div>
+
+<!-- PAG 3 -->
+<div id="p3" class="page">
 <div class="card">
 <h3>Fotos</h3>
 
-<button onclick="adicionarFoto()">📷 Adicionar Foto</button>
+<button onclick="addFoto()">Adicionar Foto</button>
 <input type="file" id="fileInput" accept="image/*" style="display:none">
 
 <div id="preview"></div>
 </div>
 
+<button onclick="irPara(2)">⬅️ Voltar</button>
+<button onclick="irPara(4)">➡️ Próximo</button>
+</div>
+
+<!-- PAG 4 -->
+<div id="p4" class="page">
+
 <div class="card">
-<textarea id="obsFinal" maxlength="50" placeholder="Observação final (máx 50 caracteres)"></textarea>
+<h3>Assinatura</h3>
+<canvas id="assinatura"></canvas>
+<button onclick="limparAss()">Limpar assinatura</button>
 </div>
 
 <div class="card">
-<button onclick="resumo()">👁 Visualizar Resumo</button>
 <button onclick="gerarPDF()">📄 Gerar e Baixar PDF</button>
 <button onclick="enviar()">📤 Enviar</button>
 </div>
 
-<div class="card">
-<h3>Resumo</h3>
-<div id="resumoBox"></div>
+<button onclick="irPara(3)">⬅️ Voltar</button>
+
 </div>
 
 <script>
 
+// NAVEGAÇÃO
+function irPara(p){
+  document.querySelectorAll(".page").forEach(el=>el.classList.remove("active"));
+  document.getElementById("p"+p).classList.add("active");
+}
+
 // CHECKLIST COMPLETO
-const itens = [
+const itens=[
 "TRANCAS E ALARMES","DOCUMENTO DO VEÍCULO","CINTO DE SEGURANÇA",
 "FREIO DE MÃO","BUZINA","MACACO MECÂNICO","TRIÂNGULO",
 "AR CONDICIONADO","LUZES DO PAINEL","FAROL BAIXO","FAROL ALTO",
@@ -84,7 +111,7 @@ const itens = [
 "LIMPEZA EXTERNA","LIMPEZA INTERNA"
 ];
 
-let fotosBase64=[];
+let fotos=[];
 let pdfBlob=null;
 
 // RENDER CHECKLIST
@@ -92,8 +119,8 @@ function renderChecklist(){
   checklist.innerHTML="";
   itens.forEach((item,i)=>{
     checklist.innerHTML+=`
-      <div id="box${i}" class="item na">
-        <label>${item}</label>
+      <div id="b${i}" class="item na">
+        ${item}
         <select id="i${i}" onchange="cor(${i})">
           <option>Aprovado</option>
           <option>Reprovado</option>
@@ -106,171 +133,126 @@ function renderChecklist(){
 }
 renderChecklist();
 
-// COR VISUAL
+// CORES
 function cor(i){
-  let val=document.getElementById("i"+i).value;
-  let box=document.getElementById("box"+i);
-
-  box.classList.remove("aprovado","reprovado","na");
-
-  if(val==="Aprovado") box.classList.add("aprovado");
-  else if(val==="Reprovado") box.classList.add("reprovado");
-  else box.classList.add("na");
+  let v=document.getElementById("i"+i).value;
+  let box=document.getElementById("b"+i);
+  box.className="item "+(v==="Aprovado"?"aprovado":v==="Reprovado"?"reprovado":"na");
 }
 
-// 📷 ADICIONAR FOTO (SEM SUBSTITUIR)
-function adicionarFoto(){
-  document.getElementById("fileInput").click();
-}
+// FOTOS
+function addFoto(){fileInput.click();}
+fileInput.onchange=function(){
+  let f=this.files[0];
+  let r=new FileReader();
+  r.onload=e=>{
+    fotos.push(e.target.result);
+    atualizarPreview();
+  }
+  r.readAsDataURL(f);
+  this.value="";
+};
 
-document.getElementById("fileInput").addEventListener("change", function(){
-
-  const arquivo=this.files[0];
-  if(!arquivo) return;
-
-  const reader=new FileReader();
-
-  reader.onload=function(e){
-
-    fotosBase64.push(e.target.result);
-
+function atualizarPreview(){
+  preview.innerHTML="";
+  fotos.forEach((f,i)=>{
     preview.innerHTML+=`
       <div>
-        <img src="${e.target.result}">
-      </div>
-    `;
-  }
-
-  reader.readAsDataURL(arquivo);
-
-  this.value="";
-});
-
-// VALIDAÇÃO
-function validar(){
-  if(!tipo.value) return "Selecione tipo";
-  if(!usuario.value) return "Preencha usuário";
-  if(!veiculo.value) return "Preencha veículo";
-  if(!placa.value) return "Preencha placa";
-  if(!km.value) return "Preencha KM";
-  return null;
+        <img src="${f}">
+        <button onclick="removerFoto(${i})">Excluir</button>
+      </div>`;
+  });
 }
 
-// RESUMO
-function resumo(){
+function removerFoto(i){
+  fotos.splice(i,1);
+  atualizarPreview();
+}
 
-  let erro=validar();
-  if(erro){alert(erro);return;}
+// ASSINATURA (TOUCH OK)
+let canvas=document.getElementById("assinatura");
+let ctx=canvas.getContext("2d");
+let desenhando=false;
 
-  let html=`
-  <b>Tipo:</b> ${tipo.value}<br>
-  <b>Usuário:</b> ${usuario.value}<br>
-  <b>Veículo:</b> ${veiculo.value}<br>
-  <b>Placa:</b> ${placa.value}<br>
-  <b>KM:</b> ${km.value}<br>
-  <b>Data:</b> ${dataHora.value}<br>
-  <b>Local:</b> ${local.value}<br><br>
-  `;
+canvas.addEventListener("mousedown",()=>desenhando=true);
+canvas.addEventListener("mouseup",()=>desenhando=false);
+canvas.addEventListener("mousemove",desenhar);
 
-  itens.forEach((item,i)=>{
-    let status=document.getElementById("i"+i).value;
-    let obs=document.getElementById("obs"+i).value;
-    html+=`${item}: ${status} ${obs?"- "+obs:""}<br>`;
-  });
+canvas.addEventListener("touchstart",()=>desenhando=true);
+canvas.addEventListener("touchend",()=>desenhando=false);
+canvas.addEventListener("touchmove",e=>{
+  let t=e.touches[0];
+  desenhar({offsetX:t.clientX-canvas.offsetLeft,offsetY:t.clientY-canvas.offsetTop});
+});
 
-  if(fotosBase64.length){
-    html+="<br><b>Fotos:</b><br>";
-    fotosBase64.forEach(f=> html+=`<img src="${f}">`);
-  }
+function desenhar(e){
+  if(!desenhando)return;
+  ctx.lineTo(e.offsetX,e.offsetY);
+  ctx.stroke();
+}
 
-  html+=`<br><b>Obs Final:</b> ${obsFinal.value}`;
-
-  resumoBox.innerHTML=html;
+function limparAss(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
 }
 
 // PDF
 async function gerarPDF(){
 
-  let erro=validar();
-  if(erro){alert(erro);return;}
+const {jsPDF}=window.jspdf;
+const pdf=new jsPDF();
 
-  const {jsPDF}=window.jspdf;
-  const pdf=new jsPDF();
+// PAG 1
+pdf.setFontSize(14);
+pdf.text("Relatório de uso de frota",10,10);
+pdf.text("Cirurtec Hospitalar Ltda",10,16);
 
-  let y=10;
+pdf.setFontSize(10);
+pdf.text(`Motorista: ${usuario.value}`,10,30);
+pdf.text(`Veículo: ${veiculo.value}`,10,36);
+pdf.text(`Placa: ${placa.value}`,10,42);
+pdf.text(`KM: ${km.value}`,10,48);
 
-  pdf.setFontSize(14);
-  pdf.text("Relatório de uso de frota",10,y); y+=6;
-  pdf.text("Cirurtec Hospitalar Ltda",10,y); y+=10;
+// PAG 2
+pdf.addPage();
+pdf.text("Checklist",10,10);
 
-  pdf.setFontSize(10);
+let y=20;
+itens.forEach((item,i)=>{
+  let status=document.getElementById("i"+i).value;
 
-  pdf.text(`Tipo: ${tipo.value}`,10,y); y+=6;
-  pdf.text(`Usuário: ${usuario.value}`,10,y); y+=6;
-  pdf.text(`Veículo: ${veiculo.value}`,10,y); y+=6;
-  pdf.text(`Placa: ${placa.value}`,10,y); y+=6;
-  pdf.text(`KM: ${km.value}`,10,y); y+=6;
-  pdf.text(`Data: ${dataHora.value}`,10,y); y+=6;
-  pdf.text(`Local: ${local.value}`,10,y); y+=10;
+  if(status==="Aprovado") pdf.setTextColor(0,150,0);
+  else if(status==="Reprovado") pdf.setTextColor(200,0,0);
+  else pdf.setTextColor(0,0,0);
 
-  pdf.text("ITEM",10,y);
-  pdf.text("STATUS",120,y);
-  pdf.text("OBS",150,y);
-  y+=5;
+  pdf.text(`${item}: ${status}`,10,y);
+  y+=6;
+});
 
-  for(let i=0;i<itens.length;i++){
+pdf.setTextColor(0,0,0);
 
-    let status=document.getElementById("i"+i).value;
-    let obs=document.getElementById("obs"+i).value;
+// FOTOS
+for(let i=0;i<fotos.length;i+=2){
+  pdf.addPage();
+  pdf.addImage(fotos[i],"JPEG",10,10,180,80);
+  if(fotos[i+1]) pdf.addImage(fotos[i+1],"JPEG",10,100,180,80);
+}
 
-    if(status==="Aprovado") pdf.setTextColor(0,150,0);
-    else if(status==="Reprovado") pdf.setTextColor(200,0,0);
-    else pdf.setTextColor(0,0,0);
+// ASSINATURA
+pdf.addPage();
+pdf.text("Assinatura:",10,20);
+pdf.addImage(canvas.toDataURL(),"PNG",10,30,180,60);
 
-    pdf.text(itens[i],10,y);
-    pdf.text(status,120,y);
-
-    pdf.setTextColor(0,0,0);
-
-    if(obs){
-      pdf.text(obs,150,y);
-    }
-
-    y+=6;
-
-    if(y>270){
-      pdf.addPage();
-      y=10;
-    }
-  }
-
-  for(let img of fotosBase64){
-    pdf.addPage();
-    pdf.addImage(img,"JPEG",10,10,180,100);
-  }
-
-  pdfBlob=pdf.output("blob");
-  pdf.save("Checklist_Frota.pdf");
+pdfBlob=pdf.output("blob");
+pdf.save("Checklist_Frota.pdf");
 }
 
 // ENVIAR
 async function enviar(){
-
-  if(!pdfBlob){
-    alert("Gere o PDF primeiro");
-    return;
-  }
-
-  const file=new File([pdfBlob],"Checklist_Frota.pdf",{type:"application/pdf"});
-
-  if(navigator.share){
-    await navigator.share({
-      files:[file],
-      title:"Checklist Frota"
-    });
-  }else{
-    alert("Compartilhamento não suportado");
-  }
+if(!pdfBlob){alert("Gere o PDF primeiro");return;}
+let file=new File([pdfBlob],"Checklist_Frota.pdf");
+if(navigator.share){
+await navigator.share({files:[file]});
+}
 }
 
 </script>
