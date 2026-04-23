@@ -2,257 +2,164 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Checklist Frota</title>
+<title>Calculadora de Vapor de Água</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
-body{font-family:Arial;background:#f4f6f9;padding:10px;}
-.page{display:none;}
-.page.active{display:block;}
-.card{background:#fff;padding:15px;border-radius:12px;margin-bottom:12px;}
-button{width:100%;padding:12px;margin-top:10px;background:#1976d2;color:#fff;border:none;border-radius:10px;}
-input,select,textarea{width:100%;padding:8px;margin-top:5px;border-radius:8px;}
-.item{padding:10px;margin-top:6px;border-radius:8px;}
-.aprovado{background:#e8f5e9;}
-.reprovado{background:#fdecea;}
-.na{background:#eee;}
-img{width:100%;margin-top:5px;border-radius:8px;}
-canvas{border:1px solid #ccc;width:100%;height:150px;}
+body{
+  font-family: Arial;
+  background:#0f172a;
+  color:#fff;
+  padding:20px;
+}
+
+.container{
+  max-width:500px;
+  margin:auto;
+  background:#1e293b;
+  padding:20px;
+  border-radius:12px;
+}
+
+h1{
+  text-align:center;
+}
+
+label{
+  display:block;
+  margin-top:15px;
+}
+
+input{
+  width:100%;
+  padding:10px;
+  border-radius:8px;
+  border:none;
+  margin-top:5px;
+}
+
+button{
+  margin-top:20px;
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:10px;
+  background:#22c55e;
+  color:#000;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+.result{
+  margin-top:20px;
+  padding:15px;
+  background:#020617;
+  border-radius:10px;
+}
 </style>
 </head>
 
 <body>
 
-<h2>🚗 Checklist Frota</h2>
+<div class="container">
+<h1>Vapor de Água</h1>
 
-<!-- PAG 1 -->
-<div id="p1" class="page active">
-<div class="card">
+<label>Temperatura (°C)</label>
+<input type="number" id="temp" placeholder="Ex: 121" oninput="calcFromTemp()">
 
-<select id="tipo">
-<option value="">Tipo</option>
-<option>Check list inicial</option>
-<option>Check list final</option>
-</select>
+<label>Pressão (bar)</label>
+<input type="number" id="press" placeholder="Ex: 2.0" oninput="calcFromPress()">
 
-<input id="usuario" placeholder="Motorista">
-<input id="veiculo" placeholder="Veículo">
-<input id="placa" placeholder="Placa">
-<input id="km" type="number" placeholder="KM">
-
-<input type="datetime-local" id="dataHora">
-<input id="local" placeholder="Local">
-
-</div>
-<button onclick="irPara(2)">➡️ Próximo</button>
+<div class="result" id="resultado">
+Aguardando entrada...
 </div>
 
-<!-- PAG 2 -->
-<div id="p2" class="page">
-<div class="card" id="checklist"></div>
-
-<button onclick="irPara(1)">⬅️ Voltar</button>
-<button onclick="irPara(3)">➡️ Próximo</button>
-</div>
-
-<!-- PAG 3 -->
-<div id="p3" class="page">
-<div class="card">
-<h3>Fotos</h3>
-
-<button onclick="addFoto()">Adicionar Foto</button>
-<input type="file" id="fileInput" accept="image/*" style="display:none">
-
-<div id="preview"></div>
-</div>
-
-<button onclick="irPara(2)">⬅️ Voltar</button>
-<button onclick="irPara(4)">➡️ Próximo</button>
-</div>
-
-<!-- PAG 4 -->
-<div id="p4" class="page">
-
-<div class="card">
-<h3>Assinatura</h3>
-<canvas id="assinatura"></canvas>
-<button onclick="limparAss()">Limpar assinatura</button>
-</div>
-
-<div class="card">
-<button onclick="gerarPDF()">📄 Gerar e Baixar PDF</button>
-<button onclick="enviar()">📤 Enviar</button>
-</div>
-
-<button onclick="irPara(3)">⬅️ Voltar</button>
-
+<button onclick="gerarPDF()">Gerar PDF</button>
 </div>
 
 <script>
 
-// NAVEGAÇÃO
-function irPara(p){
-  document.querySelectorAll(".page").forEach(el=>el.classList.remove("active"));
-  document.getElementById("p"+p).classList.add("active");
-}
+// Antoine (2 faixas)
+function tempToPressure(T){
+  let A,B,C;
 
-// CHECKLIST COMPLETO
-const itens=[
-"TRANCAS E ALARMES","DOCUMENTO DO VEÍCULO","CINTO DE SEGURANÇA",
-"FREIO DE MÃO","BUZINA","MACACO MECÂNICO","TRIÂNGULO",
-"AR CONDICIONADO","LUZES DO PAINEL","FAROL BAIXO","FAROL ALTO",
-"LUZ DE RÉ","LUZ DE FREIO","PISCA ALERTA","SETAS",
-"PARA-BRISA E VIDROS","PNEUS","CALIBRAGEM PNEUS","ESTEPE",
-"RETROVISORES","LENTE DO FAROL","PALHETAS",
-"NIVEL DE ÓLEO","FLUÍDO DO RADIADOR","AGUA DO PARA-BRISA",
-"LIMPEZA EXTERNA","LIMPEZA INTERNA"
-];
-
-let fotos=[];
-let pdfBlob=null;
-
-// RENDER CHECKLIST
-function renderChecklist(){
-  checklist.innerHTML="";
-  itens.forEach((item,i)=>{
-    checklist.innerHTML+=`
-      <div id="b${i}" class="item na">
-        ${item}
-        <select id="i${i}" onchange="cor(${i})">
-          <option>Aprovado</option>
-          <option>Reprovado</option>
-          <option>N/A</option>
-        </select>
-        <textarea id="obs${i}" placeholder="Observação"></textarea>
-      </div>
-    `;
-  });
-}
-renderChecklist();
-
-// CORES
-function cor(i){
-  let v=document.getElementById("i"+i).value;
-  let box=document.getElementById("b"+i);
-  box.className="item "+(v==="Aprovado"?"aprovado":v==="Reprovado"?"reprovado":"na");
-}
-
-// FOTOS
-function addFoto(){fileInput.click();}
-fileInput.onchange=function(){
-  let f=this.files[0];
-  let r=new FileReader();
-  r.onload=e=>{
-    fotos.push(e.target.result);
-    atualizarPreview();
+  if(T <= 99){
+    A=8.07131; B=1730.63; C=233.426;
+  }else{
+    A=8.14019; B=1810.94; C=244.485;
   }
-  r.readAsDataURL(f);
-  this.value="";
-};
 
-function atualizarPreview(){
-  preview.innerHTML="";
-  fotos.forEach((f,i)=>{
-    preview.innerHTML+=`
-      <div>
-        <img src="${f}">
-        <button onclick="removerFoto(${i})">Excluir</button>
-      </div>`;
-  });
+  const P_mmHg = 10**(A - (B/(T + C)));
+  return P_mmHg * 0.00133322;
 }
 
-function removerFoto(i){
-  fotos.splice(i,1);
-  atualizarPreview();
+// inversão
+function pressureToTemp(P){
+  let Tmin=0, Tmax=200, Tmid;
+
+  for(let i=0;i<40;i++){
+    Tmid=(Tmin+Tmax)/2;
+    const Pcalc=tempToPressure(Tmid);
+
+    if(Pcalc > P){
+      Tmax=Tmid;
+    }else{
+      Tmin=Tmid;
+    }
+  }
+
+  return Tmid;
 }
 
-// ASSINATURA (TOUCH OK)
-let canvas=document.getElementById("assinatura");
-let ctx=canvas.getContext("2d");
-let desenhando=false;
+// cálculo via temperatura
+function calcFromTemp(){
+  const T = Number(document.getElementById("temp").value);
+  if(isNaN(T)) return;
 
-canvas.addEventListener("mousedown",()=>desenhando=true);
-canvas.addEventListener("mouseup",()=>desenhando=false);
-canvas.addEventListener("mousemove",desenhar);
+  const P = tempToPressure(T);
 
-canvas.addEventListener("touchstart",()=>desenhando=true);
-canvas.addEventListener("touchend",()=>desenhando=false);
-canvas.addEventListener("touchmove",e=>{
-  let t=e.touches[0];
-  desenhar({offsetX:t.clientX-canvas.offsetLeft,offsetY:t.clientY-canvas.offsetTop});
-});
+  document.getElementById("press").value = P.toFixed(3);
 
-function desenhar(e){
-  if(!desenhando)return;
-  ctx.lineTo(e.offsetX,e.offsetY);
-  ctx.stroke();
+  mostrarResultado(T,P);
 }
 
-function limparAss(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+// cálculo via pressão
+function calcFromPress(){
+  const P = Number(document.getElementById("press").value);
+  if(isNaN(P)) return;
+
+  const T = pressureToTemp(P);
+
+  document.getElementById("temp").value = T.toFixed(1);
+
+  mostrarResultado(T,P);
+}
+
+// exibir resultado
+function mostrarResultado(T,P){
+  document.getElementById("resultado").innerHTML = `
+    <b>Resultado:</b><br>
+    Temperatura: ${T.toFixed(2)} °C<br>
+    Pressão: ${P.toFixed(3)} bar<br><br>
+    <small>Base: vapor saturado</small>
+  `;
 }
 
 // PDF
-async function gerarPDF(){
+function gerarPDF(){
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF();
 
-const {jsPDF}=window.jspdf;
-const pdf=new jsPDF();
+  const T = document.getElementById("temp").value;
+  const P = document.getElementById("press").value;
 
-// PAG 1
-pdf.setFontSize(14);
-pdf.text("Relatório de uso de frota",10,10);
-pdf.text("Cirurtec Hospitalar Ltda",10,16);
+  pdf.text("Relatório Termodinâmico", 10, 10);
+  pdf.text(`Temperatura: ${T} °C`, 10, 20);
+  pdf.text(`Pressão: ${P} bar`, 10, 30);
+  pdf.text("Base: Vapor saturado de água", 10, 40);
 
-pdf.setFontSize(10);
-pdf.text(`Motorista: ${usuario.value}`,10,30);
-pdf.text(`Veículo: ${veiculo.value}`,10,36);
-pdf.text(`Placa: ${placa.value}`,10,42);
-pdf.text(`KM: ${km.value}`,10,48);
-
-// PAG 2
-pdf.addPage();
-pdf.text("Checklist",10,10);
-
-let y=20;
-itens.forEach((item,i)=>{
-  let status=document.getElementById("i"+i).value;
-
-  if(status==="Aprovado") pdf.setTextColor(0,150,0);
-  else if(status==="Reprovado") pdf.setTextColor(200,0,0);
-  else pdf.setTextColor(0,0,0);
-
-  pdf.text(`${item}: ${status}`,10,y);
-  y+=6;
-});
-
-pdf.setTextColor(0,0,0);
-
-// FOTOS
-for(let i=0;i<fotos.length;i+=2){
-  pdf.addPage();
-  pdf.addImage(fotos[i],"JPEG",10,10,180,80);
-  if(fotos[i+1]) pdf.addImage(fotos[i+1],"JPEG",10,100,180,80);
-}
-
-// ASSINATURA
-pdf.addPage();
-pdf.text("Assinatura:",10,20);
-pdf.addImage(canvas.toDataURL(),"PNG",10,30,180,60);
-
-pdfBlob=pdf.output("blob");
-pdf.save("Checklist_Frota.pdf");
-}
-
-// ENVIAR
-async function enviar(){
-if(!pdfBlob){alert("Gere o PDF primeiro");return;}
-let file=new File([pdfBlob],"Checklist_Frota.pdf");
-if(navigator.share){
-await navigator.share({files:[file]});
-}
+  pdf.save("calculo_vapor.pdf");
 }
 
 </script>
