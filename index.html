@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Calculadora de Vapor de Água</title>
+<title>Calculadora Termodinâmica</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
@@ -22,16 +22,11 @@ body{
   border-radius:12px;
 }
 
-h1{
-  text-align:center;
-}
+h1{text-align:center;}
 
-label{
-  display:block;
-  margin-top:15px;
-}
+label{display:block;margin-top:15px;}
 
-input{
+input, select{
   width:100%;
   padding:10px;
   border-radius:8px;
@@ -63,38 +58,51 @@ button{
 <body>
 
 <div class="container">
-<h1>Vapor de Água</h1>
+<h1>Calculadora Termodinâmica</h1>
+
+<label>Fluido</label>
+<select id="fluido">
+  <option value="agua">Água</option>
+  <option value="etanol">Etanol</option>
+  <option value="metanol">Metanol</option>
+  <option value="isopropanol">Isopropanol</option>
+</select>
 
 <label>Temperatura (°C)</label>
-<input type="number" id="temp" placeholder="Ex: 121" oninput="calcFromTemp()">
+<input type="number" id="temp" oninput="calcFromTemp()">
 
 <label>Pressão (bar)</label>
-<input type="number" id="press" placeholder="Ex: 2.0" oninput="calcFromPress()">
+<input type="number" id="press" oninput="calcFromPress()">
 
 <div class="result" id="resultado">
 Aguardando entrada...
 </div>
 
 <button onclick="gerarPDF()">Gerar PDF</button>
+
 </div>
 
 <script>
 
-// Antoine (2 faixas)
+// Base de dados Antoine
+const fluidos = {
+  agua: {A:8.14019, B:1810.94, C:244.485},
+  etanol: {A:8.20417, B:1642.89, C:230.300},
+  metanol: {A:8.08097, B:1582.27, C:239.726},
+  isopropanol: {A:8.11778, B:1580.92, C:219.620}
+};
+
+function getConstantes(){
+  const f = document.getElementById("fluido").value;
+  return fluidos[f];
+}
+
 function tempToPressure(T){
-  let A,B,C;
-
-  if(T <= 99){
-    A=8.07131; B=1730.63; C=233.426;
-  }else{
-    A=8.14019; B=1810.94; C=244.485;
-  }
-
+  const {A,B,C} = getConstantes();
   const P_mmHg = 10**(A - (B/(T + C)));
   return P_mmHg * 0.00133322;
 }
 
-// inversão
 function pressureToTemp(P){
   let Tmin=0, Tmax=200, Tmid;
 
@@ -112,54 +120,52 @@ function pressureToTemp(P){
   return Tmid;
 }
 
-// cálculo via temperatura
 function calcFromTemp(){
-  const T = Number(document.getElementById("temp").value);
+  const T = Number(temp.value);
   if(isNaN(T)) return;
 
   const P = tempToPressure(T);
-
-  document.getElementById("press").value = P.toFixed(3);
+  press.value = P.toFixed(3);
 
   mostrarResultado(T,P);
 }
 
-// cálculo via pressão
 function calcFromPress(){
-  const P = Number(document.getElementById("press").value);
+  const P = Number(press.value);
   if(isNaN(P)) return;
 
   const T = pressureToTemp(P);
-
-  document.getElementById("temp").value = T.toFixed(1);
+  temp.value = T.toFixed(1);
 
   mostrarResultado(T,P);
 }
 
-// exibir resultado
 function mostrarResultado(T,P){
+  const fluido = document.getElementById("fluido").selectedOptions[0].text;
+
   document.getElementById("resultado").innerHTML = `
     <b>Resultado:</b><br>
+    Fluido: ${fluido}<br>
     Temperatura: ${T.toFixed(2)} °C<br>
     Pressão: ${P.toFixed(3)} bar<br><br>
-    <small>Base: vapor saturado</small>
+    <small>Base: Equação de Antoine</small>
   `;
 }
 
-// PDF
 function gerarPDF(){
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF();
 
-  const T = document.getElementById("temp").value;
-  const P = document.getElementById("press").value;
+  const T = temp.value;
+  const P = press.value;
+  const fluido = document.getElementById("fluido").selectedOptions[0].text;
 
   pdf.text("Relatório Termodinâmico", 10, 10);
-  pdf.text(`Temperatura: ${T} °C`, 10, 20);
-  pdf.text(`Pressão: ${P} bar`, 10, 30);
-  pdf.text("Base: Vapor saturado de água", 10, 40);
+  pdf.text(`Fluido: ${fluido}`, 10, 20);
+  pdf.text(`Temperatura: ${T} °C`, 10, 30);
+  pdf.text(`Pressão: ${P} bar`, 10, 40);
 
-  pdf.save("calculo_vapor.pdf");
+  pdf.save("relatorio_termodinamico.pdf");
 }
 
 </script>
