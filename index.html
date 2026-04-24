@@ -282,7 +282,7 @@ function renderAnexos(){
   });
 }
 
-async function finalizar(){
+function finalizar(){
 
   const {jsPDF}=window.jspdf;
   const pdf=new jsPDF();
@@ -303,7 +303,7 @@ async function finalizar(){
   pdf.text(`Origem: ${origem.value}`,10,y); y+=5;
 
   [...paradas.children].forEach((p,i)=>{
-    const cidade=p.querySelector("input").value;
+    const cidade = p.value;
     if(cidade){
       pdf.text(`Parada ${i+1}: ${cidade}`,10,y);
       y+=5;
@@ -354,22 +354,16 @@ async function finalizar(){
     pdf.addPage();
     y=10;
 
-    for (const a of anexos) {
+    anexos.forEach(a=>{
+      const img=new Image();
+      img.src=a.img;
 
-      const img = new Image();
-      img.src = a.img;
+      const largura=180;
+      const altura=largura/(img.width/img.height);
 
-      await new Promise(resolve => {
-        img.onload = resolve;
-      });
-
-      const largura = 180;
-      const proporcao = img.width / img.height;
-      const altura = largura / proporcao;
-
-      if (y + altura > 280) {
+      if(y+altura>280){
         pdf.addPage();
-        y = 10;
+        y=10;
       }
 
       pdf.addImage(a.img,"JPEG",15,y,largura,altura);
@@ -380,7 +374,7 @@ async function finalizar(){
       }else{
         y+=altura+10;
       }
-    }
+    });
   }
 
   pdf.save("Despesas_Cirurtec.pdf");
