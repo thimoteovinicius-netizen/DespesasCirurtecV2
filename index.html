@@ -148,7 +148,139 @@ button{
 
 let despesas=[], anexos=[];
 
-// ... (todo resto permanece igual)
+function formatarDataHora(dt){
+  if(!dt) return "";
+  const [data, hora] = dt.split("T");
+  const [y,m,d] = data.split("-");
+  return `${d}/${m}/${y} ${hora}`;
+}
+
+function addParada(){
+  paradas.innerHTML+=`<input placeholder="Cidade parada">`;
+}
+
+function controleCategoria(){
+  sub.classList.add("hidden");
+  qtd.classList.add("hidden");
+  outros.classList.add("hidden");
+
+  valor.value="";
+  valor.readOnly=true;
+
+  if(categoria.value==="Alimentação"){
+    sub.classList.remove("hidden");
+    qtd.classList.remove("hidden");
+  }
+
+  if(["Bônus de viagem","Veículo próprio"].includes(categoria.value)){
+    qtd.classList.remove("hidden");
+    calcularValor();
+  }
+
+  if(categoria.value==="Outros"){
+    outros.classList.remove("hidden");
+    valor.readOnly=false;
+  }
+
+  if(["Combustível","Pedágios","Peças","Hospedagem"].includes(categoria.value)){
+    valor.readOnly=false;
+  }
+}
+
+function calcularValor(){
+  const q=Number(qtd.value)||0;
+
+  if(categoria.value==="Alimentação"){
+    const t={Almoço:10,"Café da tarde":10,Jantar:40};
+    if(t[sub.value]&&q) valor.value=t[sub.value]*q;
+  }
+
+  if(categoria.value==="Bônus de viagem") valor.value=25*q;
+  if(categoria.value==="Veículo próprio") valor.value=(1.28*q).toFixed(2);
+}
+
+function addDespesa(){
+  if(!categoria.value||!valor.value) return alert("Preencha os dados");
+
+  despesas.push({
+    categoria:categoria.value,
+    detalhe:sub.value||outros.value||"",
+    quantidade:Number(qtd.value)||1,
+    valorTotal:Number(valor.value)
+  });
+
+  renderDespesas();
+
+  categoria.value=sub.value=qtd.value=outros.value=valor.value="";
+  controleCategoria();
+}
+
+function renderDespesas(){
+  lista.innerHTML="";
+  despesas.forEach((d,i)=>{
+    lista.innerHTML+=`
+      <div class="despesa">
+        ${d.categoria} – R$ ${d.valorTotal.toFixed(2)}
+        <button onclick="editarDespesa(${i})">Editar</button>
+        <button class="btn-del" onclick="removerDespesa(${i})">Excluir</button>
+      </div>`;
+  });
+}
+
+function removerDespesa(i){
+  despesas.splice(i,1);
+  renderDespesas();
+}
+
+function editarDespesa(i){
+  const d=despesas[i];
+
+  categoria.value=d.categoria;
+  controleCategoria();
+
+  if(d.categoria==="Outros") outros.value=d.detalhe;
+  else sub.value=d.detalhe;
+
+  qtd.value=d.quantidade;
+  valor.value=d.valorTotal;
+
+  despesas.splice(i,1);
+  renderDespesas();
+}
+
+function processarArquivos(input){
+  [...input.files].forEach(f=>{
+    const r=new FileReader();
+    r.onload=e=>{
+      anexos.push({img:e.target.result,desc:""});
+      renderAnexos();
+    };
+    r.readAsDataURL(f);
+  });
+}
+
+camera.onchange=()=>processarArquivos(camera);
+galeria.onchange=()=>processarArquivos(galeria);
+
+function removerAnexo(i){
+  if(confirm("Excluir anexo?")){
+    anexos.splice(i,1);
+    renderAnexos();
+  }
+}
+
+function renderAnexos(){
+  listaAnexos.innerHTML="";
+  anexos.forEach((a,i)=>{
+    listaAnexos.innerHTML+=`
+      <div class="anexo">
+        <img src="${a.img}" width="100%">
+        <textarea placeholder="Descrição"
+          oninput="anexos[${i}].desc=this.value"></textarea>
+        <button class="btn-del" onclick="removerAnexo(${i})">Excluir</button>
+      </div>`;
+  });
+}
 
 async function finalizar(){
 
@@ -158,7 +290,65 @@ async function finalizar(){
   let y=10,total=0;
   const ad = Number(adiantamento.value)||0;
 
-  // ... (toda parte anterior igual)
+  pdf.setFontSize(14);
+  pdf.text("Cirurtec Hospitalar LTDA",10,y); y+=8;
+
+  pdf.setFontSize(10);
+  pdf.text(`Técnico: ${nome.value}`,10,y); y+=5;
+  pdf.text(`E-mail: ${email.value}`,10,y); y+=5;
+  pdf.text(`Data início: ${formatarDataHora(dataInicio.value)}`,10,y); y+=5;
+  pdf.text(`Data final: ${formatarDataHora(dataFim.value)}`,10,y); y+=8;
+
+  pdf.text("Trajeto",10,y); y+=5;
+  pdf.text(`Origem: ${origem.value}`,10,y); y+=5;
+
+  [...paradas.children].forEach((p,i)=>{
+    const cidade=p.querySelector("input").value;
+    if(cidade){
+      pdf.text(`Parada ${i+1}: ${cidade}`,10,y);
+      y+=5;
+    }
+  });
+
+  pdf.text(`Destino: ${destino.value}`,10,y); y+=8;
+
+  const porCategoria={};
+
+  despesas.forEach(d=>{
+    if(!porCategoria[d.categoria]) porCategoria[d.categoria]=[];
+    porCategoria[d.categoria].push(d);
+    total+=d.valorTotal;
+  });
+
+  pdf.text("Despesas",10,y); y+=6;
+
+  for(const cat in porCategoria){
+    pdf.text(cat,10,y); y+=5;
+
+    porCategoria[cat].forEach(d=>{
+      pdf.text(`${d.detalhe||"-"} | Qtd: ${d.quantidade} | R$ ${d.valorTotal.toFixed(2)}`,12,y);
+      y+=5;
+
+      if(y>270){
+        pdf.addPage();
+        y=10;
+      }
+    });
+
+    y+=3;
+  }
+
+  pdf.text(`Adiantamento: R$ ${ad.toFixed(2)}`,10,y); y+=5;
+  pdf.text(`Total gasto: R$ ${total.toFixed(2)}`,10,y); y+=5;
+
+  const saldo=ad-total;
+  pdf.text(`Saldo final: R$ ${saldo.toFixed(2)} ${saldo<0?"(NEGATIVO)":"(RESTANTE)"}`,10,y);
+
+  if(observacoes.value){
+    pdf.addPage();
+    pdf.text("Observações:",10,10);
+    pdf.text(observacoes.value,10,20,{maxWidth:190});
+  }
 
   if(anexos.length){
     pdf.addPage();
@@ -173,39 +363,16 @@ async function finalizar(){
         img.onload = resolve;
       });
 
-      // 🔽 REDIMENSIONAMENTO + QUALIDADE + ESCALA DE CINZA
-      const canvas = document.createElement("canvas");
-      const maxWidth = 1000;
-      const scale = maxWidth / img.width;
-
-      canvas.width = maxWidth;
-      canvas.height = img.height * scale;
-
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-      // 🔽 escala de cinza (ideal pra cupom)
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const data = imageData.data;
-
-      for (let i = 0; i < data.length; i += 4) {
-        const avg = (data[i] + data[i+1] + data[i+2]) / 3;
-        data[i] = data[i+1] = data[i+2] = avg;
-      }
-
-      ctx.putImageData(imageData, 0, 0);
-
-      const imgFinal = canvas.toDataURL("image/jpeg", 0.85);
-
       const largura = 180;
-      const altura = (canvas.height / canvas.width) * largura;
+      const proporcao = img.width / img.height;
+      const altura = largura / proporcao;
 
       if (y + altura > 280) {
         pdf.addPage();
         y = 10;
       }
 
-      pdf.addImage(imgFinal,"JPEG",15,y,largura,altura);
+      pdf.addImage(a.img,"JPEG",15,y,largura,altura);
 
       if(a.desc){
         pdf.text(a.desc,15,y+altura+5);
