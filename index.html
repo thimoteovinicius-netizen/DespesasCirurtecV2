@@ -4,60 +4,97 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Despesas Cirurtec</title>
+<title>Solicitação de Viagem - Cirurtec</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
+
+*{
+  box-sizing:border-box;
+}
+
 body{
-  font-family:'Inter',sans-serif;
-  background:#f6f8fb;
+  margin:0;
   padding:15px;
+  background:#f5f7fb;
+  font-family:'Inter',sans-serif;
   color:#2c3e50;
 }
 
-.header{text-align:center;margin-bottom:20px;}
-.header img{max-width:160px;margin-bottom:6px;}
-.header h1{font-size:18px;color:#1976d2;}
+.header{
+  text-align:center;
+  margin-bottom:20px;
+}
+
+.header img{
+  width:160px;
+  max-width:100%;
+}
+
+.header h1{
+  font-size:22px;
+  color:#1565c0;
+  margin-top:10px;
+}
 
 .card{
   background:#fff;
-  padding:18px;
   border-radius:18px;
-  margin-bottom:15px;
+  padding:18px;
+  margin-bottom:16px;
   box-shadow:0 6px 16px rgba(0,0,0,0.06);
 }
 
-input,select,textarea{
+.card h3{
+  margin-top:0;
+}
+
+input,select,textarea,button{
   width:100%;
   padding:12px;
-  margin-top:8px;
   border-radius:12px;
-  border:1px solid #e0e4ea;
+  border:1px solid #dfe6ee;
+  margin-top:10px;
+  font-size:15px;
 }
 
 button{
-  width:100%;
-  padding:12px;
-  margin-top:10px;
   border:none;
-  border-radius:14px;
   cursor:pointer;
+  font-weight:600;
 }
 
-.btn-primary{background:#1976d2;color:#fff;}
-.btn-sec{background:#e3f2fd;color:#1976d2;}
-.btn-del{background:#fdecea;color:#c62828;}
+.btn-primary{
+  background:#1565c0;
+  color:#fff;
+}
 
-.hidden{display:none;}
+.btn-secondary{
+  background:#e3f2fd;
+  color:#1565c0;
+}
 
-.despesa,.anexo{
-  background:#f9fafb;
+.info{
+  background:#f7f9fc;
   border-radius:12px;
-  padding:10px;
-  margin-top:10px;
+  padding:12px;
+  margin-top:12px;
+  line-height:1.7;
 }
+
+.total{
+  font-size:20px;
+  font-weight:bold;
+  color:#1565c0;
+}
+
+.hidden{
+  display:none;
+}
+
 </style>
 </head>
 
@@ -65,319 +102,368 @@ button{
 
 <div class="header">
   <img src="1000644584.png">
-  <h1>Despesas Cirurtec</h1>
+  <h1>Solicitação de Viagem</h1>
 </div>
 
 <div class="card">
+
+  <h3>Dados do Técnico</h3>
+
   <input id="nome" placeholder="Nome do técnico">
+
   <input id="email" placeholder="E-mail">
+
 </div>
 
 <div class="card">
+
+  <h3>Período da Viagem</h3>
+
   <label>Data início</label>
   <input type="datetime-local" id="dataInicio">
+
   <label>Data final</label>
   <input type="datetime-local" id="dataFim">
-  <input type="number" id="adiantamento" placeholder="Adiantamento (R$)">
+
+  <label>Tipo de veículo</label>
+
+  <select id="tipoVeiculo" onchange="calcularCustos()">
+    <option value="">Selecione</option>
+    <option value="1.28">Veículo próprio</option>
+    <option value="0.70">Veículo da empresa</option>
+  </select>
+
 </div>
 
 <div class="card">
+
   <h3>Trajeto</h3>
+
   <input id="origem" placeholder="Origem">
-  <button class="btn-sec" onclick="addParada()">+ Parada</button>
-  <div id="paradas"></div>
+
   <input id="destino" placeholder="Destino">
+
+  <button class="btn-secondary" onclick="calcularRota()">
+    Calcular rota
+  </button>
+
+  <div class="info">
+
+    <div>
+      <strong>Distância:</strong>
+      <span id="distancia">0 km</span>
+    </div>
+
+    <div>
+      <strong>Tempo estimado:</strong>
+      <span id="tempo">--</span>
+    </div>
+
+    <div>
+      <strong>Pedágios estimados:</strong>
+      <span id="pedagios">R$ 0,00</span>
+    </div>
+
+    <div>
+      <strong>Custo por KM:</strong>
+      <span id="valorKm">R$ 0,00</span>
+    </div>
+
+  </div>
+
 </div>
 
 <div class="card">
-  <h3>Nova despesa</h3>
 
-  <select id="categoria" onchange="controleCategoria()">
-    <option value="">Categoria</option>
-    <option>Alimentação</option>
-    <option>Bônus de viagem</option>
-    <option>Veículo próprio</option>
-    <option>Combustível</option>
-    <option>Pedágios</option>
-    <option>Peças</option>
-    <option>Hospedagem</option>
-    <option>Outros</option>
-  </select>
+  <h3>Alimentação</h3>
 
-  <select id="sub" class="hidden" onchange="calcularValor()">
-    <option value="">Refeição</option>
-    <option>Almoço</option>
-    <option>Café da tarde</option>
-    <option>Jantar</option>
-  </select>
+  <input type="number" id="almoco" placeholder="Quantidade de almoços">
 
-  <input type="number" id="qtd" class="hidden" placeholder="Quantidade" oninput="calcularValor()">
-  <input id="outros" class="hidden" placeholder="Descrição">
+  <input type="number" id="jantar" placeholder="Quantidade de jantares">
 
-  <input id="valor" type="number" placeholder="Valor (R$)" readonly>
+  <input type="number" id="cafe" placeholder="Quantidade de cafés">
 
-  <button class="btn-primary" onclick="addDespesa()">Adicionar</button>
 </div>
 
 <div class="card">
-  <h3>Despesas</h3>
-  <div id="lista"></div>
+
+  <h3>Hospedagem</h3>
+
+  <input type="number" id="hospedagem" placeholder="Valor hospedagem">
+
 </div>
 
 <div class="card">
-  <h3>Anexos</h3>
 
-  <button class="btn-sec" onclick="camera.click()">📸 Câmera</button>
-  <input id="camera" type="file" accept="image/*" capture="environment" multiple hidden>
+  <h3>Observações</h3>
 
-  <button class="btn-sec" onclick="galeria.click()">🖼️ Galeria</button>
-  <input id="galeria" type="file" accept="image/*" multiple hidden>
+  <textarea id="obs" rows="5"></textarea>
 
-  <div id="listaAnexos"></div>
 </div>
 
 <div class="card">
-  <textarea id="observacoes" placeholder="Observações"></textarea>
+
+  <h3>Resumo</h3>
+
+  <div class="info">
+
+    <div>
+      KM Total:
+      <strong id="resumoKm">0 km</strong>
+    </div>
+
+    <div>
+      Pedágios:
+      <strong id="resumoPedagio">R$ 0,00</strong>
+    </div>
+
+    <div>
+      Alimentação:
+      <strong id="resumoAlimentacao">R$ 0,00</strong>
+    </div>
+
+    <div>
+      Hospedagem:
+      <strong id="resumoHospedagem">R$ 0,00</strong>
+    </div>
+
+    <hr>
+
+    <div class="total">
+      Total para depósito:
+      <span id="totalDeposito">R$ 0,00</span>
+    </div>
+
+  </div>
+
 </div>
 
 <div class="card">
-  <button class="btn-primary" onclick="finalizar()">Gerar PDF</button>
+
+  <button class="btn-primary" onclick="gerarPDF()">
+    Gerar PDF
+  </button>
+
 </div>
 
 <script>
 
-let despesas=[], anexos=[];
+let kmTotal = 0;
+let valorPedagios = 0;
 
-function formatarDataHora(dt){
+const GOOGLE_API_KEY = "SUA_API_KEY_AQUI";
+
+function moeda(v){
+  return Number(v).toLocaleString('pt-BR',{
+    style:'currency',
+    currency:'BRL'
+  });
+}
+
+async function calcularRota(){
+
+  const origem = document.getElementById("origem").value;
+  const destino = document.getElementById("destino").value;
+
+  if(!origem || !destino){
+    alert("Informe origem e destino");
+    return;
+  }
+
+  try{
+
+    const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${encodeURIComponent(origem)}&destination=${encodeURIComponent(destino)}&key=${GOOGLE_API_KEY}`;
+
+    const response = await fetch(url);
+
+    const data = await response.json();
+
+    if(data.status !== "OK"){
+      alert("Erro ao calcular rota");
+      return;
+    }
+
+    const rota = data.routes[0].legs[0];
+
+    kmTotal = rota.distance.value / 1000;
+
+    document.getElementById("distancia").innerText =
+      kmTotal.toFixed(1) + " km";
+
+    document.getElementById("tempo").innerText =
+      rota.duration.text;
+
+    document.getElementById("resumoKm").innerText =
+      kmTotal.toFixed(1) + " km";
+
+    /*
+      Pedágio estimado
+      Aproximação:
+      R$ 0,12 por km rodoviário
+    */
+
+    valorPedagios = kmTotal * 0.12;
+
+    document.getElementById("pedagios").innerText =
+      moeda(valorPedagios);
+
+    document.getElementById("resumoPedagio").innerText =
+      moeda(valorPedagios);
+
+    calcularCustos();
+
+  }catch(e){
+
+    console.error(e);
+
+    alert("Erro ao consultar Google Maps");
+
+  }
+
+}
+
+function calcularCustos(){
+
+  const tipo = Number(document.getElementById("tipoVeiculo").value);
+
+  const valorKm = kmTotal * tipo;
+
+  document.getElementById("valorKm").innerText =
+    moeda(valorKm);
+
+  const almoco =
+    (Number(document.getElementById("almoco").value) || 0) * 35;
+
+  const jantar =
+    (Number(document.getElementById("jantar").value) || 0) * 50;
+
+  const cafe =
+    (Number(document.getElementById("cafe").value) || 0) * 15;
+
+  const alimentacao = almoco + jantar + cafe;
+
+  const hospedagem =
+    Number(document.getElementById("hospedagem").value) || 0;
+
+  const total =
+    valorKm +
+    valorPedagios +
+    alimentacao +
+    hospedagem;
+
+  document.getElementById("resumoAlimentacao").innerText =
+    moeda(alimentacao);
+
+  document.getElementById("resumoHospedagem").innerText =
+    moeda(hospedagem);
+
+  document.getElementById("totalDeposito").innerText =
+    moeda(total);
+
+}
+
+document
+.getElementById("almoco")
+.addEventListener("input", calcularCustos);
+
+document
+.getElementById("jantar")
+.addEventListener("input", calcularCustos);
+
+document
+.getElementById("cafe")
+.addEventListener("input", calcularCustos);
+
+document
+.getElementById("hospedagem")
+.addEventListener("input", calcularCustos);
+
+function formatarData(dt){
+
   if(!dt) return "";
-  const [data, hora] = dt.split("T");
+
+  const [data,hora] = dt.split("T");
+
   const [y,m,d] = data.split("-");
+
   return `${d}/${m}/${y} ${hora}`;
+
 }
 
-function addParada(){
-  paradas.innerHTML+=`<input placeholder="Cidade parada">`;
-}
+function gerarPDF(){
 
-function controleCategoria(){
-  sub.classList.add("hidden");
-  qtd.classList.add("hidden");
-  outros.classList.add("hidden");
+  const { jsPDF } = window.jspdf;
 
-  valor.value="";
-  valor.readOnly=true;
+  const pdf = new jsPDF();
 
-  if(categoria.value==="Alimentação"){
-    sub.classList.remove("hidden");
-    qtd.classList.remove("hidden");
-  }
+  let y = 10;
 
-  if(["Bônus de viagem","Veículo próprio"].includes(categoria.value)){
-    qtd.classList.remove("hidden");
-    calcularValor();
-  }
+  pdf.setFontSize(16);
 
-  if(categoria.value==="Outros"){
-    outros.classList.remove("hidden");
-    valor.readOnly=false;
-  }
+  pdf.text("Solicitação de Viagem", 10, y);
 
-  if(["Combustível","Pedágios","Peças","Hospedagem"].includes(categoria.value)){
-    valor.readOnly=false;
-  }
-}
+  y += 10;
 
-function calcularValor(){
-  const q=Number(qtd.value)||0;
+  pdf.setFontSize(11);
 
-  if(categoria.value==="Alimentação"){
-    const t={Almoço:10,"Café da tarde":10,Jantar:40};
-    if(t[sub.value]&&q) valor.value=t[sub.value]*q;
-  }
+  pdf.text(`Técnico: ${document.getElementById("nome").value}`,10,y);
+  y += 6;
 
-  if(categoria.value==="Bônus de viagem") valor.value=25*q;
-  if(categoria.value==="Veículo próprio") valor.value=(1.28*q).toFixed(2);
-}
+  pdf.text(`E-mail: ${document.getElementById("email").value}`,10,y);
+  y += 6;
 
-function addDespesa(){
-  if(!categoria.value||!valor.value) return alert("Preencha os dados");
+  pdf.text(`Data início: ${formatarData(document.getElementById("dataInicio").value)}`,10,y);
+  y += 6;
 
-  despesas.push({
-    categoria:categoria.value,
-    detalhe:sub.value||outros.value||"",
-    quantidade:Number(qtd.value)||1,
-    valorTotal:Number(valor.value)
-  });
+  pdf.text(`Data final: ${formatarData(document.getElementById("dataFim").value)}`,10,y);
+  y += 6;
 
-  renderDespesas();
+  pdf.text(`Veículo: ${document.getElementById("tipoVeiculo").selectedOptions[0].text}`,10,y);
+  y += 10;
 
-  categoria.value=sub.value=qtd.value=outros.value=valor.value="";
-  controleCategoria();
-}
+  pdf.text(`Origem: ${document.getElementById("origem").value}`,10,y);
+  y += 6;
 
-function renderDespesas(){
-  lista.innerHTML="";
-  despesas.forEach((d,i)=>{
-    lista.innerHTML+=`
-      <div class="despesa">
-        ${d.categoria} – R$ ${d.valorTotal.toFixed(2)}
-        <button onclick="editarDespesa(${i})">Editar</button>
-        <button class="btn-del" onclick="removerDespesa(${i})">Excluir</button>
-      </div>`;
-  });
-}
+  pdf.text(`Destino: ${document.getElementById("destino").value}`,10,y);
+  y += 10;
 
-function removerDespesa(i){
-  despesas.splice(i,1);
-  renderDespesas();
-}
+  pdf.text(`KM total: ${document.getElementById("resumoKm").innerText}`,10,y);
+  y += 6;
 
-function editarDespesa(i){
-  const d=despesas[i];
+  pdf.text(`Pedágios: ${document.getElementById("resumoPedagio").innerText}`,10,y);
+  y += 6;
 
-  categoria.value=d.categoria;
-  controleCategoria();
+  pdf.text(`Alimentação: ${document.getElementById("resumoAlimentacao").innerText}`,10,y);
+  y += 6;
 
-  if(d.categoria==="Outros") outros.value=d.detalhe;
-  else sub.value=d.detalhe;
-
-  qtd.value=d.quantidade;
-  valor.value=d.valorTotal;
-
-  despesas.splice(i,1);
-  renderDespesas();
-}
-
-function processarArquivos(input){
-  [...input.files].forEach(f=>{
-    const r=new FileReader();
-    r.onload=e=>{
-      anexos.push({img:e.target.result,desc:""});
-      renderAnexos();
-    };
-    r.readAsDataURL(f);
-  });
-}
-
-camera.onchange=()=>processarArquivos(camera);
-galeria.onchange=()=>processarArquivos(galeria);
-
-function removerAnexo(i){
-  if(confirm("Excluir anexo?")){
-    anexos.splice(i,1);
-    renderAnexos();
-  }
-}
-
-function renderAnexos(){
-  listaAnexos.innerHTML="";
-  anexos.forEach((a,i)=>{
-    listaAnexos.innerHTML+=`
-      <div class="anexo">
-        <img src="${a.img}" width="100%">
-        <textarea placeholder="Descrição"
-          oninput="anexos[${i}].desc=this.value"></textarea>
-        <button class="btn-del" onclick="removerAnexo(${i})">Excluir</button>
-      </div>`;
-  });
-}
-
-function finalizar(){
-
-  const {jsPDF}=window.jspdf;
-  const pdf=new jsPDF();
-
-  let y=10,total=0;
-  const ad = Number(adiantamento.value)||0;
+  pdf.text(`Hospedagem: ${document.getElementById("resumoHospedagem").innerText}`,10,y);
+  y += 6;
 
   pdf.setFontSize(14);
-  pdf.text("Cirurtec Hospitalar LTDA",10,y); y+=8;
 
-  pdf.setFontSize(10);
-  pdf.text(`Técnico: ${nome.value}`,10,y); y+=5;
-  pdf.text(`E-mail: ${email.value}`,10,y); y+=5;
-  pdf.text(`Data início: ${formatarDataHora(dataInicio.value)}`,10,y); y+=5;
-  pdf.text(`Data final: ${formatarDataHora(dataFim.value)}`,10,y); y+=8;
+  pdf.text(`TOTAL: ${document.getElementById("totalDeposito").innerText}`,10,y);
 
-  pdf.text("Trajeto",10,y); y+=5;
-  pdf.text(`Origem: ${origem.value}`,10,y); y+=5;
+  y += 15;
 
-  [...paradas.children].forEach((p,i)=>{
-    const cidade = p.value;
-    if(cidade){
-      pdf.text(`Parada ${i+1}: ${cidade}`,10,y);
-      y+=5;
-    }
-  });
+  if(document.getElementById("obs").value){
 
-  pdf.text(`Destino: ${destino.value}`,10,y); y+=8;
+    pdf.setFontSize(11);
 
-  const porCategoria={};
+    pdf.text("Observações:",10,y);
 
-  despesas.forEach(d=>{
-    if(!porCategoria[d.categoria]) porCategoria[d.categoria]=[];
-    porCategoria[d.categoria].push(d);
-    total+=d.valorTotal;
-  });
+    y += 8;
 
-  pdf.text("Despesas",10,y); y+=6;
+    pdf.text(
+      document.getElementById("obs").value,
+      10,
+      y,
+      { maxWidth: 180 }
+    );
 
-  for(const cat in porCategoria){
-    pdf.text(cat,10,y); y+=5;
-
-    porCategoria[cat].forEach(d=>{
-      pdf.text(`${d.detalhe||"-"} | Qtd: ${d.quantidade} | R$ ${d.valorTotal.toFixed(2)}`,12,y);
-      y+=5;
-
-      if(y>270){
-        pdf.addPage();
-        y=10;
-      }
-    });
-
-    y+=3;
   }
 
-  pdf.text(`Adiantamento: R$ ${ad.toFixed(2)}`,10,y); y+=5;
-  pdf.text(`Total gasto: R$ ${total.toFixed(2)}`,10,y); y+=5;
+  pdf.save("Solicitacao_Viagem.pdf");
 
-  const saldo=ad-total;
-  pdf.text(`Saldo final: R$ ${saldo.toFixed(2)} ${saldo<0?"(NEGATIVO)":"(RESTANTE)"}`,10,y);
-
-  if(observacoes.value){
-    pdf.addPage();
-    pdf.text("Observações:",10,10);
-    pdf.text(observacoes.value,10,20,{maxWidth:190});
-  }
-
-  if(anexos.length){
-    pdf.addPage();
-    y=10;
-
-    anexos.forEach(a=>{
-      const img=new Image();
-      img.src=a.img;
-
-      const largura=180;
-      const altura=largura/(img.width/img.height);
-
-      if(y+altura>280){
-        pdf.addPage();
-        y=10;
-      }
-
-      pdf.addImage(a.img,"JPEG",15,y,largura,altura);
-
-      if(a.desc){
-        pdf.text(a.desc,15,y+altura+5);
-        y+=altura+15;
-      }else{
-        y+=altura+10;
-      }
-    });
-  }
-
-  pdf.save("Despesas_Cirurtec.pdf");
 }
 
 </script>
