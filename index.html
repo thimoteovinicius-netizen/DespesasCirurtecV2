@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -19,7 +21,7 @@
 body{
   margin:0;
   padding:15px;
-  background:#f5f7fb;
+  background:#f4f7fb;
   font-family:'Inter',sans-serif;
   color:#2c3e50;
 }
@@ -35,9 +37,9 @@ body{
 }
 
 .header h1{
-  font-size:22px;
-  color:#1565c0;
   margin-top:10px;
+  color:#1565c0;
+  font-size:24px;
 }
 
 .card{
@@ -45,20 +47,28 @@ body{
   border-radius:18px;
   padding:18px;
   margin-bottom:16px;
-  box-shadow:0 6px 16px rgba(0,0,0,0.06);
+  box-shadow:0 6px 18px rgba(0,0,0,0.06);
 }
 
 .card h3{
   margin-top:0;
+  margin-bottom:15px;
 }
 
-input,select,textarea,button{
+input,
+select,
+textarea,
+button{
   width:100%;
-  padding:12px;
-  border-radius:12px;
-  border:1px solid #dfe6ee;
+  padding:14px;
+  border-radius:14px;
+  border:1px solid #dbe3ec;
   margin-top:10px;
   font-size:15px;
+}
+
+textarea{
+  resize:none;
 }
 
 button{
@@ -78,40 +88,52 @@ button{
 }
 
 .info{
-  background:#f7f9fc;
-  border-radius:12px;
-  padding:12px;
-  margin-top:12px;
-  line-height:1.7;
+  background:#f8fafc;
+  border-radius:14px;
+  padding:15px;
+  line-height:1.8;
+  margin-top:15px;
 }
 
 .total{
-  font-size:20px;
+  font-size:22px;
   font-weight:bold;
   color:#1565c0;
 }
 
-.hidden{
-  display:none;
+hr{
+  border:none;
+  border-top:1px solid #dbe3ec;
+  margin:15px 0;
 }
 
 </style>
+
 </head>
 
 <body>
 
 <div class="header">
+
   <img src="1000644584.png">
+
   <h1>Solicitação de Viagem</h1>
+
 </div>
 
 <div class="card">
 
   <h3>Dados do Técnico</h3>
 
-  <input id="nome" placeholder="Nome do técnico">
+  <input
+    id="nome"
+    placeholder="Nome do técnico"
+  >
 
-  <input id="email" placeholder="E-mail">
+  <input
+    id="email"
+    placeholder="E-mail"
+  >
 
 </div>
 
@@ -120,17 +142,36 @@ button{
   <h3>Período da Viagem</h3>
 
   <label>Data início</label>
-  <input type="datetime-local" id="dataInicio">
+
+  <input
+    type="datetime-local"
+    id="dataInicio"
+  >
 
   <label>Data final</label>
-  <input type="datetime-local" id="dataFim">
+
+  <input
+    type="datetime-local"
+    id="dataFim"
+  >
 
   <label>Tipo de veículo</label>
 
-  <select id="tipoVeiculo" onchange="calcularCustos()">
+  <select
+    id="tipoVeiculo"
+    onchange="calcularCustos()"
+  >
+
     <option value="">Selecione</option>
-    <option value="1.28">Veículo próprio</option>
-    <option value="0.70">Veículo da empresa</option>
+
+    <option value="1.28">
+      Veículo próprio
+    </option>
+
+    <option value="0.70">
+      Veículo da empresa
+    </option>
+
   </select>
 
 </div>
@@ -139,11 +180,20 @@ button{
 
   <h3>Trajeto</h3>
 
-  <input id="origem" placeholder="Origem">
+  <input
+    id="origem"
+    placeholder="Origem"
+  >
 
-  <input id="destino" placeholder="Destino">
+  <input
+    id="destino"
+    placeholder="Destino"
+  >
 
-  <button class="btn-secondary" onclick="calcularRota()">
+  <button
+    class="btn-secondary"
+    onclick="calcularRota()"
+  >
     Calcular rota
   </button>
 
@@ -177,11 +227,23 @@ button{
 
   <h3>Alimentação</h3>
 
-  <input type="number" id="almoco" placeholder="Quantidade de almoços">
+  <input
+    type="number"
+    id="almoco"
+    placeholder="Quantidade de almoços"
+  >
 
-  <input type="number" id="jantar" placeholder="Quantidade de jantares">
+  <input
+    type="number"
+    id="jantar"
+    placeholder="Quantidade de jantares"
+  >
 
-  <input type="number" id="cafe" placeholder="Quantidade de cafés">
+  <input
+    type="number"
+    id="cafe"
+    placeholder="Quantidade de cafés"
+  >
 
 </div>
 
@@ -189,7 +251,11 @@ button{
 
   <h3>Hospedagem</h3>
 
-  <input type="number" id="hospedagem" placeholder="Valor hospedagem">
+  <input
+    type="number"
+    id="hospedagem"
+    placeholder="Valor hospedagem"
+  >
 
 </div>
 
@@ -197,13 +263,17 @@ button{
 
   <h3>Observações</h3>
 
-  <textarea id="obs" rows="5"></textarea>
+  <textarea
+    id="obs"
+    rows="5"
+    placeholder="Digite observações adicionais"
+  ></textarea>
 
 </div>
 
 <div class="card">
 
-  <h3>Resumo</h3>
+  <h3>Resumo da Viagem</h3>
 
   <div class="info">
 
@@ -230,8 +300,13 @@ button{
     <hr>
 
     <div class="total">
+
       Total para depósito:
-      <span id="totalDeposito">R$ 0,00</span>
+
+      <span id="totalDeposito">
+        R$ 0,00
+      </span>
+
     </div>
 
   </div>
@@ -240,7 +315,10 @@ button{
 
 <div class="card">
 
-  <button class="btn-primary" onclick="gerarPDF()">
+  <button
+    class="btn-primary"
+    onclick="gerarPDF()"
+  >
     Gerar PDF
   </button>
 
@@ -251,205 +329,366 @@ button{
 let kmTotal = 0;
 let valorPedagios = 0;
 
-const GOOGLE_API_KEY = "SUA_API_KEY_AQUI";
+const valorAlmoco = 35;
+const valorJantar = 50;
+const valorCafe = 15;
 
-function moeda(v){
-  return Number(v).toLocaleString('pt-BR',{
-    style:'currency',
-    currency:'BRL'
-  });
+function moeda(valor){
+
+  return Number(valor).toLocaleString(
+    'pt-BR',
+    {
+      style:'currency',
+      currency:'BRL'
+    }
+  );
+
 }
 
-async function calcularRota(){
+function calcularRota(){
 
-  const origem = document.getElementById("origem").value;
-  const destino = document.getElementById("destino").value;
+  const origem =
+    document.getElementById("origem").value;
+
+  const destino =
+    document.getElementById("destino").value;
 
   if(!origem || !destino){
+
     alert("Informe origem e destino");
+
     return;
+
   }
 
-  try{
+  const directionsService =
+    new google.maps.DirectionsService();
 
-    const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${encodeURIComponent(origem)}&destination=${encodeURIComponent(destino)}&key=${GOOGLE_API_KEY}`;
+  directionsService.route({
 
-    const response = await fetch(url);
+    origin: origem,
 
-    const data = await response.json();
+    destination: destino,
 
-    if(data.status !== "OK"){
+    travelMode:
+      google.maps.TravelMode.DRIVING
+
+  },
+
+  function(result,status){
+
+    if(status !== "OK"){
+
       alert("Erro ao calcular rota");
+
       return;
+
     }
 
-    const rota = data.routes[0].legs[0];
+    const rota =
+      result.routes[0].legs[0];
 
-    kmTotal = rota.distance.value / 1000;
+    kmTotal =
+      rota.distance.value / 1000;
 
-    document.getElementById("distancia").innerText =
+    document.getElementById("distancia")
+    .innerText =
       kmTotal.toFixed(1) + " km";
 
-    document.getElementById("tempo").innerText =
+    document.getElementById("tempo")
+    .innerText =
       rota.duration.text;
 
-    document.getElementById("resumoKm").innerText =
+    document.getElementById("resumoKm")
+    .innerText =
       kmTotal.toFixed(1) + " km";
 
     /*
-      Pedágio estimado
-      Aproximação:
-      R$ 0,12 por km rodoviário
+      Estimativa simples de pedágio
     */
 
-    valorPedagios = kmTotal * 0.12;
+    valorPedagios =
+      kmTotal * 0.12;
 
-    document.getElementById("pedagios").innerText =
+    document.getElementById("pedagios")
+    .innerText =
       moeda(valorPedagios);
 
-    document.getElementById("resumoPedagio").innerText =
+    document.getElementById("resumoPedagio")
+    .innerText =
       moeda(valorPedagios);
 
     calcularCustos();
 
-  }catch(e){
-
-    console.error(e);
-
-    alert("Erro ao consultar Google Maps");
-
-  }
+  });
 
 }
 
 function calcularCustos(){
 
-  const tipo = Number(document.getElementById("tipoVeiculo").value);
+  const tipoVeiculo =
+    Number(
+      document.getElementById("tipoVeiculo").value
+    );
 
-  const valorKm = kmTotal * tipo;
+  const custoKm =
+    kmTotal * tipoVeiculo;
 
-  document.getElementById("valorKm").innerText =
-    moeda(valorKm);
+  document.getElementById("valorKm")
+  .innerText =
+    moeda(custoKm);
 
-  const almoco =
-    (Number(document.getElementById("almoco").value) || 0) * 35;
+  const almocos =
+    (Number(
+      document.getElementById("almoco").value
+    ) || 0)
+    * valorAlmoco;
 
-  const jantar =
-    (Number(document.getElementById("jantar").value) || 0) * 50;
+  const jantares =
+    (Number(
+      document.getElementById("jantar").value
+    ) || 0)
+    * valorJantar;
 
-  const cafe =
-    (Number(document.getElementById("cafe").value) || 0) * 15;
+  const cafes =
+    (Number(
+      document.getElementById("cafe").value
+    ) || 0)
+    * valorCafe;
 
-  const alimentacao = almoco + jantar + cafe;
+  const alimentacao =
+    almocos +
+    jantares +
+    cafes;
 
   const hospedagem =
-    Number(document.getElementById("hospedagem").value) || 0;
+    Number(
+      document.getElementById("hospedagem").value
+    ) || 0;
 
   const total =
-    valorKm +
+    custoKm +
     valorPedagios +
     alimentacao +
     hospedagem;
 
-  document.getElementById("resumoAlimentacao").innerText =
+  document.getElementById("resumoAlimentacao")
+  .innerText =
     moeda(alimentacao);
 
-  document.getElementById("resumoHospedagem").innerText =
+  document.getElementById("resumoHospedagem")
+  .innerText =
     moeda(hospedagem);
 
-  document.getElementById("totalDeposito").innerText =
+  document.getElementById("totalDeposito")
+  .innerText =
     moeda(total);
 
 }
 
 document
 .getElementById("almoco")
-.addEventListener("input", calcularCustos);
+.addEventListener(
+  "input",
+  calcularCustos
+);
 
 document
 .getElementById("jantar")
-.addEventListener("input", calcularCustos);
+.addEventListener(
+  "input",
+  calcularCustos
+);
 
 document
 .getElementById("cafe")
-.addEventListener("input", calcularCustos);
+.addEventListener(
+  "input",
+  calcularCustos
+);
 
 document
 .getElementById("hospedagem")
-.addEventListener("input", calcularCustos);
+.addEventListener(
+  "input",
+  calcularCustos
+);
 
-function formatarData(dt){
+function formatarData(dataHora){
 
-  if(!dt) return "";
+  if(!dataHora) return "";
 
-  const [data,hora] = dt.split("T");
+  const [data,hora] =
+    dataHora.split("T");
 
-  const [y,m,d] = data.split("-");
+  const [ano,mes,dia] =
+    data.split("-");
 
-  return `${d}/${m}/${y} ${hora}`;
+  return `${dia}/${mes}/${ano} ${hora}`;
 
 }
 
 function gerarPDF(){
 
-  const { jsPDF } = window.jspdf;
+  const { jsPDF } =
+    window.jspdf;
 
-  const pdf = new jsPDF();
+  const pdf =
+    new jsPDF();
 
   let y = 10;
 
   pdf.setFontSize(16);
 
-  pdf.text("Solicitação de Viagem", 10, y);
+  pdf.text(
+    "Solicitação de Viagem",
+    10,
+    y
+  );
 
-  y += 10;
+  y += 12;
 
   pdf.setFontSize(11);
 
-  pdf.text(`Técnico: ${document.getElementById("nome").value}`,10,y);
+  pdf.text(
+    `Técnico: ${
+      document.getElementById("nome").value
+    }`,
+    10,
+    y
+  );
+
   y += 6;
 
-  pdf.text(`E-mail: ${document.getElementById("email").value}`,10,y);
+  pdf.text(
+    `E-mail: ${
+      document.getElementById("email").value
+    }`,
+    10,
+    y
+  );
+
   y += 6;
 
-  pdf.text(`Data início: ${formatarData(document.getElementById("dataInicio").value)}`,10,y);
+  pdf.text(
+    `Data início: ${
+      formatarData(
+        document.getElementById("dataInicio").value
+      )
+    }`,
+    10,
+    y
+  );
+
   y += 6;
 
-  pdf.text(`Data final: ${formatarData(document.getElementById("dataFim").value)}`,10,y);
+  pdf.text(
+    `Data final: ${
+      formatarData(
+        document.getElementById("dataFim").value
+      )
+    }`,
+    10,
+    y
+  );
+
   y += 6;
 
-  pdf.text(`Veículo: ${document.getElementById("tipoVeiculo").selectedOptions[0].text}`,10,y);
+  pdf.text(
+    `Veículo: ${
+      document.getElementById("tipoVeiculo")
+      .selectedOptions[0].text
+    }`,
+    10,
+    y
+  );
+
   y += 10;
 
-  pdf.text(`Origem: ${document.getElementById("origem").value}`,10,y);
+  pdf.text(
+    `Origem: ${
+      document.getElementById("origem").value
+    }`,
+    10,
+    y
+  );
+
   y += 6;
 
-  pdf.text(`Destino: ${document.getElementById("destino").value}`,10,y);
+  pdf.text(
+    `Destino: ${
+      document.getElementById("destino").value
+    }`,
+    10,
+    y
+  );
+
   y += 10;
 
-  pdf.text(`KM total: ${document.getElementById("resumoKm").innerText}`,10,y);
+  pdf.text(
+    `KM Total: ${
+      document.getElementById("resumoKm").innerText
+    }`,
+    10,
+    y
+  );
+
   y += 6;
 
-  pdf.text(`Pedágios: ${document.getElementById("resumoPedagio").innerText}`,10,y);
+  pdf.text(
+    `Pedágios: ${
+      document.getElementById("resumoPedagio").innerText
+    }`,
+    10,
+    y
+  );
+
   y += 6;
 
-  pdf.text(`Alimentação: ${document.getElementById("resumoAlimentacao").innerText}`,10,y);
+  pdf.text(
+    `Alimentação: ${
+      document.getElementById("resumoAlimentacao").innerText
+    }`,
+    10,
+    y
+  );
+
   y += 6;
 
-  pdf.text(`Hospedagem: ${document.getElementById("resumoHospedagem").innerText}`,10,y);
-  y += 6;
+  pdf.text(
+    `Hospedagem: ${
+      document.getElementById("resumoHospedagem").innerText
+    }`,
+    10,
+    y
+  );
+
+  y += 10;
 
   pdf.setFontSize(14);
 
-  pdf.text(`TOTAL: ${document.getElementById("totalDeposito").innerText}`,10,y);
+  pdf.text(
+    `TOTAL PARA DEPÓSITO: ${
+      document.getElementById("totalDeposito")
+      .innerText
+    }`,
+    10,
+    y
+  );
 
   y += 15;
 
-  if(document.getElementById("obs").value){
+  if(
+    document.getElementById("obs").value
+  ){
 
     pdf.setFontSize(11);
 
-    pdf.text("Observações:",10,y);
+    pdf.text(
+      "Observações:",
+      10,
+      y
+    );
 
     y += 8;
 
@@ -457,16 +696,26 @@ function gerarPDF(){
       document.getElementById("obs").value,
       10,
       y,
-      { maxWidth: 180 }
+      {
+        maxWidth:180
+      }
     );
 
   }
 
-  pdf.save("Solicitacao_Viagem.pdf");
+  pdf.save(
+    "Solicitacao_Viagem.pdf"
+  );
 
 }
 
 </script>
 
+<!-- GOOGLE MAPS API -->
+
+<script async defer
+src="https://maps.googleapis.com/maps/api/js?key=SUA_API_KEY_AQUI">
+</script>
+
 </body>
-</html>
+  </html>
