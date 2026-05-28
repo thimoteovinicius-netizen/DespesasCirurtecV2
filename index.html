@@ -289,6 +289,7 @@ hr{
     type="number"
     id="almoco"
     placeholder="Quantidade de almoços"
+    readonly
   >
 
   <label>
@@ -299,6 +300,7 @@ hr{
     type="number"
     id="jantar"
     placeholder="Quantidade de jantares"
+    readonly
   >
 
   <label>
@@ -309,6 +311,7 @@ hr{
     type="number"
     id="cafe"
     placeholder="Quantidade de cafés"
+    readonly
   >
 
 </div>
@@ -669,37 +672,124 @@ function calcularCustos(){
   .innerText =
     moeda(custoKm);
 
-  const almocos =
-    (
-      Number(
-        document.getElementById(
-          "almoco"
-        ).value
-      ) || 0
-    ) * valorAlmoco;
+  const inicio =
+    document.getElementById(
+      "dataInicio"
+    ).value;
 
-  const jantares =
-    (
-      Number(
-        document.getElementById(
-          "jantar"
-        ).value
-      ) || 0
-    ) * valorJantar;
+  const fim =
+    document.getElementById(
+      "dataFim"
+    ).value;
 
-  const cafes =
-    (
-      Number(
-        document.getElementById(
-          "cafe"
-        ).value
-      ) || 0
-    ) * valorCafe;
+  let qtdAlmoco = 0;
+  let qtdCafe = 0;
+  let qtdJanta = 0;
+
+  if(inicio && fim){
+
+    const dataInicio =
+      new Date(inicio);
+
+    const dataFim =
+      new Date(fim);
+
+    const horaSaida =
+      dataInicio.getHours();
+
+    const minutoSaida =
+      dataInicio.getMinutes();
+
+    const horaChegada =
+      dataFim.getHours();
+
+    const diffMs =
+      dataFim - dataInicio;
+
+    const dias =
+      Math.floor(
+        diffMs /
+        (1000 * 60 * 60 * 24)
+      );
+
+    /*
+      VIAGEM DE 1 DIA
+    */
+
+    if(dias === 0){
+
+      qtdCafe = 1;
+
+      if(
+        horaSaida < 11 ||
+        (
+          horaSaida === 11 &&
+          minutoSaida <= 30
+        )
+      ){
+
+        qtdAlmoco = 1;
+
+      }
+
+      if(horaChegada >= 19){
+
+        qtdJanta = 1;
+
+      }
+
+    }
+
+    /*
+      MAIS DE 1 DIA
+    */
+
+    else{
+
+      qtdCafe =
+        dias + 1;
+
+      qtdAlmoco =
+        dias + 1;
+
+      qtdJanta =
+        dias;
+
+      if(horaChegada >= 19){
+
+        qtdJanta += 1;
+
+      }
+
+    }
+
+  }
+
+  document.getElementById(
+    "almoco"
+  ).value =
+    qtdAlmoco;
+
+  document.getElementById(
+    "jantar"
+  ).value =
+    qtdJanta;
+
+  document.getElementById(
+    "cafe"
+  ).value =
+    qtdCafe;
 
   const alimentacao =
-    almocos +
-    jantares +
-    cafes;
+    (
+      qtdAlmoco * valorAlmoco
+    ) +
+    (
+      qtdJanta * valorJantar
+    ) +
+    (
+      qtdCafe * valorCafe
+    );
 
   const hospedagem =
     Number(
@@ -745,9 +835,6 @@ function calcularCustos(){
 }
 
 [
-  "almoco",
-  "jantar",
-  "cafe",
   "hospedagem",
   "valorExtra"
 ]
@@ -757,6 +844,22 @@ function calcularCustos(){
   .getElementById(id)
   .addEventListener(
     "input",
+    calcularCustos
+  );
+
+});
+
+[
+  "dataInicio",
+  "dataFim",
+  "tipoVeiculo"
+]
+.forEach(id=>{
+
+  document
+  .getElementById(id)
+  .addEventListener(
+    "change",
     calcularCustos
   );
 
@@ -1092,4 +1195,4 @@ function gerarPDF(){
 </script>
 
 </body>
-  </html>
+</html>
