@@ -409,6 +409,14 @@ hr{
     Gerar PDF
   </button>
 
+  <button
+    class="btn-secondary"
+    style="margin-top:10px"
+    onclick="copiarCalculos()"
+  >
+    Copiar cálculos
+  </button>
+
 </div>
 
 <script>
@@ -766,6 +774,76 @@ function formatarData(dataHora){
     data.split("-");
 
   return `${dia}/${mes}/${ano} ${hora}`;
+
+}
+
+function copiarCalculos(){
+
+  const texto = `
+
+SOLICITAÇÃO DE VIAGEM
+
+Técnico:
+${document.getElementById("nome").value}
+
+E-mail:
+${document.getElementById("email").value}
+
+Data início:
+${formatarData(
+  document.getElementById(
+    "dataInicio"
+  ).value
+)}
+
+Data final:
+${formatarData(
+  document.getElementById(
+    "dataFim"
+  ).value
+)}
+
+Veículo:
+${
+  document.getElementById(
+    "tipoVeiculo"
+  ).selectedOptions[0].text
+}
+
+Origem:
+${document.getElementById("origem").value}
+
+Destino:
+${document.getElementById("destino").value}
+
+KM Total:
+${document.getElementById("resumoKm").innerText}
+
+Pedágios:
+${document.getElementById("resumoPedagio").innerText}
+
+Alimentação:
+${document.getElementById("resumoAlimentacao").innerText}
+
+Hospedagem:
+${document.getElementById("resumoHospedagem").innerText}
+
+Valor Extra:
+${document.getElementById("resumoExtra").innerText}
+
+TOTAL PARA DEPÓSITO:
+${document.getElementById("totalDeposito").innerText}
+
+Observações:
+${document.getElementById("obs").value}
+
+`;
+
+  navigator.clipboard.writeText(texto);
+
+  alert(
+    "Cálculos copiados!"
+  );
 
 }
 
