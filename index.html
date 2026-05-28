@@ -151,8 +151,6 @@ hr{
 
 <div class="header">
 
-  <img src="1000644584.png">
-
   <h1>Solicitação de Viagem</h1>
 
 </div>
@@ -199,7 +197,6 @@ hr{
 
   <select
     id="tipoVeiculo"
-    onchange="calcularCustos()"
   >
 
     <option value="">
@@ -450,7 +447,7 @@ hr{
 <script>
 
 const API_KEY =
-"COLE_SUA_CHAVE_AQUI";
+"eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjEyYjBmZTIwNGU5MjQ3ZmI5ODdjOTNhZGQ2YWIyY2U5IiwiaCI6Im11cm11cjY0In0=";
 
 let kmTotal = 0;
 let valorPedagios = 0;
@@ -519,7 +516,7 @@ async function buscarCoordenadas(local){
   ){
 
     throw new Error(
-      "Local não encontrado"
+      `Local não encontrado: ${local}`
     );
 
   }
@@ -606,6 +603,16 @@ async function calcularRota(){
     const data =
       await response.json();
 
+    if(!data.routes){
+
+      console.log(data);
+
+      throw new Error(
+        "Resposta inválida da API"
+      );
+
+    }
+
     const rota =
       data.routes[0];
 
@@ -660,8 +667,17 @@ async function calcularRota(){
 
     console.error(erro);
 
+    document.getElementById(
+      "statusRota"
+    ).innerText =
+      "";
+
     alert(
-      "Erro ao calcular rota"
+      "Erro ao calcular rota.\n\n" +
+      (
+        erro.message ||
+        "Verifique origem, destino ou chave API."
+      )
     );
 
   }
@@ -735,53 +751,34 @@ function calcularCustos(){
           minutoSaida <= 30
         )
       ){
-
         qtdAlmoco = 1;
-
       }
 
       if(horaChegada >= 19){
-
         qtdJanta = 1;
-
       }
 
-    }
+    }else{
 
-    else{
-
-      qtdCafe =
-        dias + 1;
-
-      qtdAlmoco =
-        dias + 1;
-
-      qtdJanta =
-        dias;
+      qtdCafe = dias + 1;
+      qtdAlmoco = dias + 1;
+      qtdJanta = dias;
 
       if(horaChegada >= 19){
-
         qtdJanta += 1;
-
       }
 
     }
 
   }
 
-  document.getElementById(
-    "almoco"
-  ).value =
+  document.getElementById("almoco").value =
     qtdAlmoco;
 
-  document.getElementById(
-    "jantar"
-  ).value =
+  document.getElementById("jantar").value =
     qtdJanta;
 
-  document.getElementById(
-    "cafe"
-  ).value =
+  document.getElementById("cafe").value =
     qtdCafe;
 
   const totalAlmoco =
@@ -858,7 +855,10 @@ function calcularCustos(){
 
 [
   "hospedagem",
-  "valorExtra"
+  "valorExtra",
+  "tipoVeiculo",
+  "dataInicio",
+  "dataFim"
 ]
 .forEach(id=>{
 
@@ -871,37 +871,6 @@ function calcularCustos(){
 
 });
 
-[
-  "dataInicio",
-  "dataFim",
-  "tipoVeiculo"
-]
-.forEach(id=>{
-
-  document
-  .getElementById(id)
-  .addEventListener(
-    "change",
-    calcularCustos
-  );
-
-});
-
-function formatarData(dataHora){
-
-  if(!dataHora)
-    return "";
-
-  const [data,hora] =
-    dataHora.split("T");
-
-  const [ano,mes,dia] =
-    data.split("-");
-
-  return `${dia}/${mes}/${ano} ${hora}`;
-
-}
-
 function copiarCalculos(){
 
   const texto = `
@@ -910,9 +879,6 @@ SOLICITAÇÃO DE VIAGEM
 
 Técnico:
 ${document.getElementById("nome").value}
-
-E-mail:
-${document.getElementById("email").value}
 
 KM:
 ${document.getElementById("resumoKm").innerText}
@@ -929,13 +895,13 @@ ${document.getElementById("valorJantarResumo").innerText}
 Café:
 ${document.getElementById("valorCafeResumo").innerText}
 
-Alimentação Total:
+Alimentação:
 ${document.getElementById("resumoAlimentacao").innerText}
 
 Hospedagem:
 ${document.getElementById("resumoHospedagem").innerText}
 
-Valor Extra:
+Extra:
 ${document.getElementById("resumoExtra").innerText}
 
 TOTAL:
@@ -957,7 +923,7 @@ function gerarPDF(){
   const pdf =
     new jsPDF();
 
-  let y = 10;
+  let y = 15;
 
   pdf.setFontSize(16);
 
@@ -971,125 +937,27 @@ function gerarPDF(){
 
   pdf.setFontSize(11);
 
-  pdf.text(
-    `Técnico: ${
-      document.getElementById(
-        "nome"
-      ).value
-    }`,
-    10,
-    y
-  );
+  const linhas = [
 
-  y += 8;
+    `Técnico: ${document.getElementById("nome").value}`,
+    `KM: ${document.getElementById("resumoKm").innerText}`,
+    `Pedágios: ${document.getElementById("resumoPedagio").innerText}`,
+    `Almoço: ${document.getElementById("valorAlmocoResumo").innerText}`,
+    `Jantar: ${document.getElementById("valorJantarResumo").innerText}`,
+    `Café: ${document.getElementById("valorCafeResumo").innerText}`,
+    `Alimentação: ${document.getElementById("resumoAlimentacao").innerText}`,
+    `Hospedagem: ${document.getElementById("resumoHospedagem").innerText}`,
+    `Extra: ${document.getElementById("resumoExtra").innerText}`,
+    `TOTAL: ${document.getElementById("totalDeposito").innerText}`
 
-  pdf.text(
-    `KM Total: ${
-      document.getElementById(
-        "resumoKm"
-      ).innerText
-    }`,
-    10,
-    y
-  );
+  ];
 
-  y += 8;
+  linhas.forEach(linha=>{
 
-  pdf.text(
-    `Pedágios: ${
-      document.getElementById(
-        "resumoPedagio"
-      ).innerText
-    }`,
-    10,
-    y
-  );
+    pdf.text(linha,10,y);
+    y += 8;
 
-  y += 8;
-
-  pdf.text(
-    `Almoço: ${
-      document.getElementById(
-        "valorAlmocoResumo"
-      ).innerText
-    }`,
-    10,
-    y
-  );
-
-  y += 8;
-
-  pdf.text(
-    `Jantar: ${
-      document.getElementById(
-        "valorJantarResumo"
-      ).innerText
-    }`,
-    10,
-    y
-  );
-
-  y += 8;
-
-  pdf.text(
-    `Café: ${
-      document.getElementById(
-        "valorCafeResumo"
-      ).innerText
-    }`,
-    10,
-    y
-  );
-
-  y += 8;
-
-  pdf.text(
-    `Alimentação Total: ${
-      document.getElementById(
-        "resumoAlimentacao"
-      ).innerText
-    }`,
-    10,
-    y
-  );
-
-  y += 8;
-
-  pdf.text(
-    `Hospedagem: ${
-      document.getElementById(
-        "resumoHospedagem"
-      ).innerText
-    }`,
-    10,
-    y
-  );
-
-  y += 8;
-
-  pdf.text(
-    `Valor Extra: ${
-      document.getElementById(
-        "resumoExtra"
-      ).innerText
-    }`,
-    10,
-    y
-  );
-
-  y += 12;
-
-  pdf.setFontSize(14);
-
-  pdf.text(
-    `TOTAL: ${
-      document.getElementById(
-        "totalDeposito"
-      ).innerText
-    }`,
-    10,
-    y
-  );
+  });
 
   pdf.save(
     "Solicitacao_Viagem.pdf"
@@ -1100,4 +968,4 @@ function gerarPDF(){
 </script>
 
 </body>
-  </html>
+</html>
