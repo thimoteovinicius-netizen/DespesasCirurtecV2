@@ -31,11 +31,6 @@ body{
   margin-bottom:20px;
 }
 
-.header img{
-  width:160px;
-  max-width:100%;
-}
-
 .header h1{
   margin-top:10px;
   color:#1565c0;
@@ -195,9 +190,7 @@ hr{
 
   <label>Tipo de veículo</label>
 
-  <select
-    id="tipoVeiculo"
-  >
+  <select id="tipoVeiculo">
 
     <option value="">
       Selecione
@@ -272,7 +265,7 @@ hr{
     </div>
 
     <div>
-      <strong>Custo KM:</strong>
+      <strong>Valor KM:</strong>
       <span id="valorKm">R$ 0,00</span>
     </div>
 
@@ -365,6 +358,11 @@ hr{
     <div>
       KM Total:
       <strong id="resumoKm">0 km</strong>
+    </div>
+
+    <div>
+      Valor KM:
+      <strong id="resumoValorKm">R$ 0,00</strong>
     </div>
 
     <div>
@@ -658,10 +656,10 @@ async function calcularRota(){
     .innerText =
       moeda(valorPedagios);
 
+    calcularCustos();
+
     status.innerText =
       "Rota calculada com sucesso";
-
-    calcularCustos();
 
   }catch(erro){
 
@@ -697,6 +695,10 @@ function calcularCustos(){
     kmTotal * tipoVeiculo;
 
   document.getElementById("valorKm")
+  .innerText =
+    moeda(custoKm);
+
+  document.getElementById("resumoValorKm")
   .innerText =
     moeda(custoKm);
 
@@ -883,6 +885,9 @@ ${document.getElementById("nome").value}
 KM:
 ${document.getElementById("resumoKm").innerText}
 
+Valor KM:
+${document.getElementById("resumoValorKm").innerText}
+
 Pedágios:
 ${document.getElementById("resumoPedagio").innerText}
 
@@ -941,6 +946,7 @@ function gerarPDF(){
 
     `Técnico: ${document.getElementById("nome").value}`,
     `KM: ${document.getElementById("resumoKm").innerText}`,
+    `Valor KM: ${document.getElementById("resumoValorKm").innerText}`,
     `Pedágios: ${document.getElementById("resumoPedagio").innerText}`,
     `Almoço: ${document.getElementById("valorAlmocoResumo").innerText}`,
     `Jantar: ${document.getElementById("valorJantarResumo").innerText}`,
