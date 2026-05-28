@@ -55,6 +55,13 @@ body{
   margin-bottom:15px;
 }
 
+label{
+  display:block;
+  margin-top:14px;
+  font-weight:600;
+  color:#34495e;
+}
+
 input,
 select,
 textarea,
@@ -63,7 +70,7 @@ button{
   padding:14px;
   border-radius:14px;
   border:1px solid #dbe3ec;
-  margin-top:10px;
+  margin-top:8px;
   font-size:15px;
 }
 
@@ -148,14 +155,18 @@ hr{
 
   <h3>Dados do Técnico</h3>
 
+  <label>Nome do técnico</label>
+
   <input
     id="nome"
-    placeholder="Nome do técnico"
+    placeholder="Digite o nome"
   >
+
+  <label>E-mail</label>
 
   <input
     id="email"
-    placeholder="E-mail"
+    placeholder="Digite o e-mail"
   >
 
 </div>
@@ -205,9 +216,11 @@ hr{
 
   <h3>Trajeto</h3>
 
+  <label>Origem</label>
+
   <input
     id="origem"
-    placeholder="Origem"
+    placeholder="Cidade de origem"
   >
 
   <button
@@ -219,9 +232,11 @@ hr{
 
   <div id="paradas"></div>
 
+  <label>Destino</label>
+
   <input
     id="destino"
-    placeholder="Destino"
+    placeholder="Cidade de destino"
   >
 
   <button
@@ -266,17 +281,29 @@ hr{
 
   <h3>Alimentação</h3>
 
+  <label>
+    Almoço (R$ 10,00 cada)
+  </label>
+
   <input
     type="number"
     id="almoco"
     placeholder="Quantidade de almoços"
   >
 
+  <label>
+    Jantar (R$ 40,00 cada)
+  </label>
+
   <input
     type="number"
     id="jantar"
     placeholder="Quantidade de jantares"
   >
+
+  <label>
+    Café (R$ 10,00 cada)
+  </label>
 
   <input
     type="number"
@@ -290,10 +317,12 @@ hr{
 
   <h3>Hospedagem</h3>
 
+  <label>Valor hospedagem</label>
+
   <input
     type="number"
     id="hospedagem"
-    placeholder="Valor hospedagem"
+    placeholder="Digite o valor"
   >
 
 </div>
@@ -302,10 +331,12 @@ hr{
 
   <h3>Valor Extra</h3>
 
+  <label>Adicionar valor extra</label>
+
   <input
     type="number"
     id="valorExtra"
-    placeholder="Adicionar valor extra"
+    placeholder="Digite o valor extra"
   >
 
 </div>
@@ -387,10 +418,6 @@ const API_KEY =
 
 let kmTotal = 0;
 let valorPedagios = 0;
-
-/*
-  VALORES DAS REFEIÇÕES
-*/
 
 const valorAlmoco = 10;
 const valorJantar = 40;
@@ -987,4 +1014,4 @@ function gerarPDF(){
 </script>
 
 </body>
-</html>
+  </html>
