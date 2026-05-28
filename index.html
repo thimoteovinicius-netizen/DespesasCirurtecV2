@@ -98,7 +98,7 @@ button{
   background:#f8fafc;
   border-radius:14px;
   padding:15px;
-  line-height:1.8;
+  line-height:1.9;
   margin-top:15px;
 }
 
@@ -135,6 +135,12 @@ hr{
   background:#fdecea;
   color:#c62828;
   padding:0 14px;
+}
+
+.alimentacao-detalhe{
+  margin-left:10px;
+  font-size:14px;
+  color:#555;
 }
 
 </style>
@@ -288,7 +294,6 @@ hr{
   <input
     type="number"
     id="almoco"
-    placeholder="Quantidade de almoços"
     readonly
   >
 
@@ -299,7 +304,6 @@ hr{
   <input
     type="number"
     id="jantar"
-    placeholder="Quantidade de jantares"
     readonly
   >
 
@@ -310,7 +314,6 @@ hr{
   <input
     type="number"
     id="cafe"
-    placeholder="Quantidade de cafés"
     readonly
   >
 
@@ -375,6 +378,28 @@ hr{
     <div>
       Alimentação:
       <strong id="resumoAlimentacao">R$ 0,00</strong>
+
+      <div class="alimentacao-detalhe">
+        Almoço:
+        <span id="valorAlmocoResumo">
+          R$ 0,00
+        </span>
+      </div>
+
+      <div class="alimentacao-detalhe">
+        Jantar:
+        <span id="valorJantarResumo">
+          R$ 0,00
+        </span>
+      </div>
+
+      <div class="alimentacao-detalhe">
+        Café:
+        <span id="valorCafeResumo">
+          R$ 0,00
+        </span>
+      </div>
+
     </div>
 
     <div>
@@ -425,7 +450,7 @@ hr{
 <script>
 
 const API_KEY =
-"eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjEyYjBmZTIwNGU5MjQ3ZmI5ODdjOTNhZGQ2YWIyY2U5IiwiaCI6Im11cm11cjY0In0=";
+"COLE_SUA_CHAVE_AQUI";
 
 let kmTotal = 0;
 let valorPedagios = 0;
@@ -507,22 +532,17 @@ async function buscarCoordenadas(local){
 async function calcularRota(){
 
   const origem =
-    document.getElementById("origem")
-    .value;
+    document.getElementById("origem").value;
 
   const destino =
-    document.getElementById("destino")
-    .value;
+    document.getElementById("destino").value;
 
   const status =
     document.getElementById("statusRota");
 
   if(!origem || !destino){
 
-    alert(
-      "Informe origem e destino"
-    );
-
+    alert("Informe origem e destino");
     return;
 
   }
@@ -540,9 +560,7 @@ async function calcularRota(){
     .querySelectorAll(".parada")
     .forEach(parada=>{
 
-      if(
-        parada.value.trim()
-      ){
+      if(parada.value.trim()){
 
         pontos.push(
           parada.value.trim()
@@ -579,10 +597,7 @@ async function calcularRota(){
           },
 
           body:JSON.stringify({
-
-            coordinates:
-              coordenadas
-
+            coordinates:coordenadas
           })
 
         }
@@ -644,9 +659,6 @@ async function calcularRota(){
   }catch(erro){
 
     console.error(erro);
-
-    status.innerText =
-      "";
 
     alert(
       "Erro ao calcular rota"
@@ -712,10 +724,6 @@ function calcularCustos(){
         (1000 * 60 * 60 * 24)
       );
 
-    /*
-      VIAGEM DE 1 DIA
-    */
-
     if(dias === 0){
 
       qtdCafe = 1;
@@ -739,10 +747,6 @@ function calcularCustos(){
       }
 
     }
-
-    /*
-      MAIS DE 1 DIA
-    */
 
     else{
 
@@ -780,16 +784,34 @@ function calcularCustos(){
   ).value =
     qtdCafe;
 
+  const totalAlmoco =
+    qtdAlmoco * valorAlmoco;
+
+  const totalJantar =
+    qtdJanta * valorJantar;
+
+  const totalCafe =
+    qtdCafe * valorCafe;
+
   const alimentacao =
-    (
-      qtdAlmoco * valorAlmoco
-    ) +
-    (
-      qtdJanta * valorJantar
-    ) +
-    (
-      qtdCafe * valorCafe
-    );
+    totalAlmoco +
+    totalJantar +
+    totalCafe;
+
+  document.getElementById(
+    "valorAlmocoResumo"
+  ).innerText =
+    moeda(totalAlmoco);
+
+  document.getElementById(
+    "valorJantarResumo"
+  ).innerText =
+    moeda(totalJantar);
+
+  document.getElementById(
+    "valorCafeResumo"
+  ).innerText =
+    moeda(totalCafe);
 
   const hospedagem =
     Number(
@@ -892,40 +914,22 @@ ${document.getElementById("nome").value}
 E-mail:
 ${document.getElementById("email").value}
 
-Data início:
-${formatarData(
-  document.getElementById(
-    "dataInicio"
-  ).value
-)}
-
-Data final:
-${formatarData(
-  document.getElementById(
-    "dataFim"
-  ).value
-)}
-
-Veículo:
-${
-  document.getElementById(
-    "tipoVeiculo"
-  ).selectedOptions[0].text
-}
-
-Origem:
-${document.getElementById("origem").value}
-
-Destino:
-${document.getElementById("destino").value}
-
-KM Total:
+KM:
 ${document.getElementById("resumoKm").innerText}
 
 Pedágios:
 ${document.getElementById("resumoPedagio").innerText}
 
-Alimentação:
+Almoço:
+${document.getElementById("valorAlmocoResumo").innerText}
+
+Jantar:
+${document.getElementById("valorJantarResumo").innerText}
+
+Café:
+${document.getElementById("valorCafeResumo").innerText}
+
+Alimentação Total:
 ${document.getElementById("resumoAlimentacao").innerText}
 
 Hospedagem:
@@ -934,19 +938,14 @@ ${document.getElementById("resumoHospedagem").innerText}
 Valor Extra:
 ${document.getElementById("resumoExtra").innerText}
 
-TOTAL PARA DEPÓSITO:
+TOTAL:
 ${document.getElementById("totalDeposito").innerText}
-
-Observações:
-${document.getElementById("obs").value}
 
 `;
 
   navigator.clipboard.writeText(texto);
 
-  alert(
-    "Cálculos copiados!"
-  );
+  alert("Cálculos copiados!");
 
 }
 
@@ -982,106 +981,7 @@ function gerarPDF(){
     y
   );
 
-  y += 6;
-
-  pdf.text(
-    `E-mail: ${
-      document.getElementById(
-        "email"
-      ).value
-    }`,
-    10,
-    y
-  );
-
-  y += 6;
-
-  pdf.text(
-    `Data início: ${
-      formatarData(
-        document.getElementById(
-          "dataInicio"
-        ).value
-      )
-    }`,
-    10,
-    y
-  );
-
-  y += 6;
-
-  pdf.text(
-    `Data final: ${
-      formatarData(
-        document.getElementById(
-          "dataFim"
-        ).value
-      )
-    }`,
-    10,
-    y
-  );
-
-  y += 6;
-
-  pdf.text(
-    `Veículo: ${
-      document.getElementById(
-        "tipoVeiculo"
-      ).selectedOptions[0].text
-    }`,
-    10,
-    y
-  );
-
-  y += 10;
-
-  pdf.text(
-    `Origem: ${
-      document.getElementById(
-        "origem"
-      ).value
-    }`,
-    10,
-    y
-  );
-
-  y += 6;
-
-  const paradas =
-    document.querySelectorAll(
-      ".parada"
-    );
-
-  paradas.forEach((parada,index)=>{
-
-    if(parada.value.trim()){
-
-      pdf.text(
-        `Parada ${index+1}: ${
-          parada.value
-        }`,
-        10,
-        y
-      );
-
-      y += 6;
-
-    }
-
-  });
-
-  pdf.text(
-    `Destino: ${
-      document.getElementById(
-        "destino"
-      ).value
-    }`,
-    10,
-    y
-  );
-
-  y += 10;
+  y += 8;
 
   pdf.text(
     `KM Total: ${
@@ -1093,7 +993,7 @@ function gerarPDF(){
     y
   );
 
-  y += 6;
+  y += 8;
 
   pdf.text(
     `Pedágios: ${
@@ -1105,10 +1005,46 @@ function gerarPDF(){
     y
   );
 
-  y += 6;
+  y += 8;
 
   pdf.text(
-    `Alimentação: ${
+    `Almoço: ${
+      document.getElementById(
+        "valorAlmocoResumo"
+      ).innerText
+    }`,
+    10,
+    y
+  );
+
+  y += 8;
+
+  pdf.text(
+    `Jantar: ${
+      document.getElementById(
+        "valorJantarResumo"
+      ).innerText
+    }`,
+    10,
+    y
+  );
+
+  y += 8;
+
+  pdf.text(
+    `Café: ${
+      document.getElementById(
+        "valorCafeResumo"
+      ).innerText
+    }`,
+    10,
+    y
+  );
+
+  y += 8;
+
+  pdf.text(
+    `Alimentação Total: ${
       document.getElementById(
         "resumoAlimentacao"
       ).innerText
@@ -1117,7 +1053,7 @@ function gerarPDF(){
     y
   );
 
-  y += 6;
+  y += 8;
 
   pdf.text(
     `Hospedagem: ${
@@ -1129,7 +1065,7 @@ function gerarPDF(){
     y
   );
 
-  y += 6;
+  y += 8;
 
   pdf.text(
     `Valor Extra: ${
@@ -1141,12 +1077,12 @@ function gerarPDF(){
     y
   );
 
-  y += 10;
+  y += 12;
 
   pdf.setFontSize(14);
 
   pdf.text(
-    `TOTAL PARA DEPÓSITO: ${
+    `TOTAL: ${
       document.getElementById(
         "totalDeposito"
       ).innerText
@@ -1154,37 +1090,6 @@ function gerarPDF(){
     10,
     y
   );
-
-  y += 15;
-
-  if(
-    document.getElementById(
-      "obs"
-    ).value
-  ){
-
-    pdf.setFontSize(11);
-
-    pdf.text(
-      "Observações:",
-      10,
-      y
-    );
-
-    y += 8;
-
-    pdf.text(
-      document.getElementById(
-        "obs"
-      ).value,
-      10,
-      y,
-      {
-        maxWidth:180
-      }
-    );
-
-  }
 
   pdf.save(
     "Solicitacao_Viagem.pdf"
@@ -1195,4 +1100,4 @@ function gerarPDF(){
 </script>
 
 </body>
-</html>
+  </html>
