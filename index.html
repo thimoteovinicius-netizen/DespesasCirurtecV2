@@ -300,6 +300,18 @@ hr{
 
 <div class="card">
 
+  <h3>Valor Extra</h3>
+
+  <input
+    type="number"
+    id="valorExtra"
+    placeholder="Adicionar valor extra"
+  >
+
+</div>
+
+<div class="card">
+
   <h3>Observações</h3>
 
   <textarea
@@ -334,6 +346,11 @@ hr{
     <div>
       Hospedagem:
       <strong id="resumoHospedagem">R$ 0,00</strong>
+    </div>
+
+    <div>
+      Valor Extra:
+      <strong id="resumoExtra">R$ 0,00</strong>
     </div>
 
     <hr>
@@ -371,9 +388,13 @@ const API_KEY =
 let kmTotal = 0;
 let valorPedagios = 0;
 
-const valorAlmoco = 35;
-const valorJantar = 50;
-const valorCafe = 15;
+/*
+  VALORES DAS REFEIÇÕES
+*/
+
+const valorAlmoco = 10;
+const valorJantar = 40;
+const valorCafe = 10;
 
 function moeda(valor){
 
@@ -473,10 +494,6 @@ async function calcularRota(){
     status.innerText =
       "Calculando rota...";
 
-    /*
-      LISTA DE PONTOS
-    */
-
     const pontos = [];
 
     pontos.push(origem);
@@ -499,10 +516,6 @@ async function calcularRota(){
 
     pontos.push(destino);
 
-    /*
-      COORDENADAS
-    */
-
     const coordenadas = [];
 
     for(const ponto of pontos){
@@ -515,10 +528,6 @@ async function calcularRota(){
       coordenadas.push(coord);
 
     }
-
-    /*
-      CALCULAR ROTA
-    */
 
     const response =
       await fetch(
@@ -556,10 +565,6 @@ async function calcularRota(){
     kmTotal =
       distanciaMetros / 1000;
 
-    /*
-      TEMPO FORMATADO
-    */
-
     const horas =
       Math.floor(
         duracaoSegundos / 3600
@@ -570,16 +575,8 @@ async function calcularRota(){
         (duracaoSegundos % 3600) / 60
       );
 
-    /*
-      PEDÁGIO ESTIMADO
-    */
-
     valorPedagios =
       kmTotal * 0.12;
-
-    /*
-      EXIBIR
-    */
 
     document.getElementById("distancia")
     .innerText =
@@ -592,17 +589,6 @@ async function calcularRota(){
     document.getElementById("pedagios")
     .innerText =
       moeda(valorPedagios);
-
-    document.getElementById("valorKm")
-    .innerText =
-      moeda(
-        kmTotal *
-        Number(
-          document.getElementById(
-            "tipoVeiculo"
-          ).value || 0
-        )
-      );
 
     document.getElementById("resumoKm")
     .innerText =
@@ -687,11 +673,19 @@ function calcularCustos(){
       ).value
     ) || 0;
 
+  const valorExtra =
+    Number(
+      document.getElementById(
+        "valorExtra"
+      ).value
+    ) || 0;
+
   const total =
     custoKm +
     valorPedagios +
     alimentacao +
-    hospedagem;
+    hospedagem +
+    valorExtra;
 
   document.getElementById(
     "resumoAlimentacao"
@@ -704,6 +698,11 @@ function calcularCustos(){
     moeda(hospedagem);
 
   document.getElementById(
+    "resumoExtra"
+  ).innerText =
+    moeda(valorExtra);
+
+  document.getElementById(
     "totalDeposito"
   ).innerText =
     moeda(total);
@@ -714,7 +713,8 @@ function calcularCustos(){
   "almoco",
   "jantar",
   "cafe",
-  "hospedagem"
+  "hospedagem",
+  "valorExtra"
 ]
 .forEach(id=>{
 
@@ -915,6 +915,18 @@ function gerarPDF(){
     `Hospedagem: ${
       document.getElementById(
         "resumoHospedagem"
+      ).innerText
+    }`,
+    10,
+    y
+  );
+
+  y += 6;
+
+  pdf.text(
+    `Valor Extra: ${
+      document.getElementById(
+        "resumoExtra"
       ).innerText
     }`,
     10,
