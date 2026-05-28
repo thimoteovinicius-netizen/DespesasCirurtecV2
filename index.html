@@ -110,6 +110,24 @@ hr{
 .loading{
   color:#1565c0;
   font-weight:600;
+  margin-top:10px;
+}
+
+.parada-box{
+  display:flex;
+  gap:8px;
+  margin-top:10px;
+}
+
+.parada-box input{
+  margin-top:0;
+}
+
+.btn-remover{
+  width:auto;
+  background:#fdecea;
+  color:#c62828;
+  padding:0 14px;
 }
 
 </style>
@@ -172,11 +190,11 @@ hr{
     </option>
 
     <option value="1.28">
-      Veículo próprio
+      Veículo próprio (R$ 1,28/km)
     </option>
 
     <option value="0.70">
-      Veículo da empresa
+      Veículo da empresa (R$ 0,70/km)
     </option>
 
   </select>
@@ -191,6 +209,15 @@ hr{
     id="origem"
     placeholder="Origem"
   >
+
+  <button
+    class="btn-secondary"
+    onclick="addParada()"
+  >
+    + Adicionar parada
+  </button>
+
+  <div id="paradas"></div>
 
   <input
     id="destino"
@@ -360,6 +387,38 @@ function moeda(valor){
 
 }
 
+function addParada(){
+
+  const container =
+    document.getElementById("paradas");
+
+  const div =
+    document.createElement("div");
+
+  div.className =
+    "parada-box";
+
+  div.innerHTML = `
+
+    <input
+      type="text"
+      class="parada"
+      placeholder="Cidade de parada"
+    >
+
+    <button
+      class="btn-remover"
+      onclick="this.parentElement.remove()"
+    >
+      X
+    </button>
+
+  `;
+
+  container.appendChild(div);
+
+}
+
 async function buscarCoordenadas(local){
 
   const response =
@@ -415,18 +474,47 @@ async function calcularRota(){
       "Calculando rota...";
 
     /*
+      LISTA DE PONTOS
+    */
+
+    const pontos = [];
+
+    pontos.push(origem);
+
+    document
+    .querySelectorAll(".parada")
+    .forEach(parada=>{
+
+      if(
+        parada.value.trim()
+      ){
+
+        pontos.push(
+          parada.value.trim()
+        );
+
+      }
+
+    });
+
+    pontos.push(destino);
+
+    /*
       COORDENADAS
     */
 
-    const origemCoord =
-      await buscarCoordenadas(
-        origem
-      );
+    const coordenadas = [];
 
-    const destinoCoord =
-      await buscarCoordenadas(
-        destino
-      );
+    for(const ponto of pontos){
+
+      const coord =
+        await buscarCoordenadas(
+          ponto
+        );
+
+      coordenadas.push(coord);
+
+    }
 
     /*
       CALCULAR ROTA
@@ -445,10 +533,8 @@ async function calcularRota(){
 
           body:JSON.stringify({
 
-            coordinates:[
-              origemCoord,
-              destinoCoord
-            ]
+            coordinates:
+              coordenadas
 
           })
 
@@ -506,6 +592,17 @@ async function calcularRota(){
     document.getElementById("pedagios")
     .innerText =
       moeda(valorPedagios);
+
+    document.getElementById("valorKm")
+    .innerText =
+      moeda(
+        kmTotal *
+        Number(
+          document.getElementById(
+            "tipoVeiculo"
+          ).value || 0
+        )
+      );
 
     document.getElementById("resumoKm")
     .innerText =
@@ -742,6 +839,29 @@ function gerarPDF(){
   );
 
   y += 6;
+
+  const paradas =
+    document.querySelectorAll(
+      ".parada"
+    );
+
+  paradas.forEach((parada,index)=>{
+
+    if(parada.value.trim()){
+
+      pdf.text(
+        `Parada ${index+1}: ${
+          parada.value
+        }`,
+        10,
+        y
+      );
+
+      y += 6;
+
+    }
+
+  });
 
   pdf.text(
     `Destino: ${
