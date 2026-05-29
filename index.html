@@ -119,6 +119,11 @@ button{
   color:#555;
 }
 
+.destaque{
+  color:#1565c0;
+  font-weight:bold;
+}
+
 hr{
   border:none;
   border-top:1px solid #dbe3ec;
@@ -279,8 +284,25 @@ hr{
   <div class="info">
 
     <div>
-      KM:
+      KM informado:
       <strong id="resumoKm">
+        0 km
+      </strong>
+    </div>
+
+    <div>
+      Acréscimo 5%:
+      <strong
+        id="resumoAcrescimoKm"
+        class="destaque"
+      >
+        0 km
+      </strong>
+    </div>
+
+    <div>
+      KM total calculado:
+      <strong id="resumoKmFinal">
         0 km
       </strong>
     </div>
@@ -467,12 +489,18 @@ function abrirGoogleMaps(){
 
 function calcularCustos(){
 
-  const kmTotal =
+  const kmInformado =
     Number(
       document.getElementById(
         "kmManual"
       ).value
     ) || 0;
+
+  const acrescimoKm =
+    kmInformado * 0.05;
+
+  const kmTotal =
+    kmInformado + acrescimoKm;
 
   const pedagios =
     Number(
@@ -493,6 +521,16 @@ function calcularCustos(){
 
   document.getElementById(
     "resumoKm"
+  ).innerText =
+    kmInformado.toFixed(1) + " km";
+
+  document.getElementById(
+    "resumoAcrescimoKm"
+  ).innerText =
+    acrescimoKm.toFixed(1) + " km";
+
+  document.getElementById(
+    "resumoKmFinal"
   ).innerText =
     kmTotal.toFixed(1) + " km";
 
@@ -689,8 +727,14 @@ SOLICITAÇÃO DE VIAGEM
 Técnico:
 ${document.getElementById("nome").value}
 
-KM:
+KM informado:
 ${document.getElementById("resumoKm").innerText}
+
+Acréscimo 5%:
+${document.getElementById("resumoAcrescimoKm").innerText}
+
+KM total:
+${document.getElementById("resumoKmFinal").innerText}
 
 Valor KM:
 ${document.getElementById("resumoValorKm").innerText}
@@ -749,7 +793,9 @@ function gerarPDF(){
   const linhas = [
 
     `Técnico: ${document.getElementById("nome").value}`,
-    `KM: ${document.getElementById("resumoKm").innerText}`,
+    `KM informado: ${document.getElementById("resumoKm").innerText}`,
+    `Acréscimo 5%: ${document.getElementById("resumoAcrescimoKm").innerText}`,
+    `KM total: ${document.getElementById("resumoKmFinal").innerText}`,
     `Valor KM: ${document.getElementById("resumoValorKm").innerText}`,
     `Pedágios: ${document.getElementById("resumoPedagio").innerText}`,
     `Almoço: ${document.getElementById("valorAlmocoResumo").innerText}`,
@@ -778,4 +824,4 @@ function gerarPDF(){
 </script>
 
 </body>
-</html>
+    </html>
