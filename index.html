@@ -96,12 +96,6 @@ button{
   color:#1565c0;
 }
 
-.loading{
-  color:#1565c0;
-  font-weight:600;
-  margin-top:10px;
-}
-
 .parada-box{
   display:flex;
   gap:8px;
@@ -214,39 +208,28 @@ hr{
 
   <button
     class="btn-secondary"
-    onclick="calcularRota()"
+    onclick="abrirGoogleMaps()"
   >
-    Calcular rota
+    Abrir rota no Google Maps
   </button>
 
-  <div
-    id="statusRota"
-    class="loading"
-  ></div>
+  <label>KM total da viagem</label>
 
-  <div class="info">
+  <input
+    type="number"
+    id="kmManual"
+    placeholder="Digite os KM da rota"
+    oninput="calcularCustos()"
+  >
 
-    <div>
-      <strong>Distância:</strong>
-      <span id="distancia">0 km</span>
-    </div>
+  <label>Valor pedágios</label>
 
-    <div>
-      <strong>Tempo:</strong>
-      <span id="tempo">--</span>
-    </div>
-
-    <div>
-      <strong>Pedágios:</strong>
-      <span id="pedagios">R$ 0,00</span>
-    </div>
-
-    <div>
-      <strong>Valor KM:</strong>
-      <span id="valorKm">R$ 0,00</span>
-    </div>
-
-  </div>
+  <input
+    type="number"
+    id="pedagioManual"
+    placeholder="Digite o valor total dos pedágios"
+    oninput="calcularCustos()"
+  >
 
 </div>
 
@@ -272,6 +255,7 @@ hr{
   <input
     type="number"
     id="hospedagem"
+    oninput="calcularCustos()"
   >
 
 </div>
@@ -283,6 +267,7 @@ hr{
   <input
     type="number"
     id="valorExtra"
+    oninput="calcularCustos()"
   >
 
 </div>
@@ -393,12 +378,6 @@ hr{
 
 <script>
 
-const API_KEY =
-"SUA_CHAVE_AQUI";
-
-let kmTotal = 0;
-let valorPedagios = 0;
-
 const valorAlmoco = 10;
 const valorJantar = 40;
 const valorCafe = 10;
@@ -447,32 +426,7 @@ function addParada(){
 
 }
 
-async function buscarCoordenadas(local){
-
-  const response =
-    await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(local)}`
-    );
-
-  const data =
-    await response.json();
-
-  if(!data.length){
-
-    throw new Error(
-      `Local não encontrado: ${local}`
-    );
-
-  }
-
-  return [
-    parseFloat(data[0].lon),
-    parseFloat(data[0].lat)
-  ];
-
-}
-
-async function calcularRota(){
+function abrirGoogleMaps(){
 
   const origem =
     document.getElementById("origem").value;
@@ -480,170 +434,77 @@ async function calcularRota(){
   const destino =
     document.getElementById("destino").value;
 
-  const status =
-    document.getElementById("statusRota");
-
   if(!origem || !destino){
 
-    alert("Informe origem e destino");
+    alert(
+      "Informe origem e destino"
+    );
+
     return;
 
   }
 
-  try{
+  let url =
+    `https://www.google.com/maps/dir/${encodeURIComponent(origem)}`;
 
-    status.innerText =
-      "Calculando rota...";
+  document
+  .querySelectorAll(".parada")
+  .forEach(parada=>{
 
-    const pontos = [];
+    if(parada.value.trim()){
 
-    pontos.push(origem);
-
-    document
-    .querySelectorAll(".parada")
-    .forEach(parada=>{
-
-      if(parada.value.trim()){
-
-        pontos.push(
-          parada.value.trim()
-        );
-
-      }
-
-    });
-
-    pontos.push(destino);
-
-    const coordenadas = [];
-
-    for(const ponto of pontos){
-
-      const coord =
-        await buscarCoordenadas(
-          ponto
-        );
-
-      coordenadas.push(coord);
+      url += `/${encodeURIComponent(parada.value.trim())}`;
 
     }
 
-    const response =
-      await fetch(
-        "https://api.openrouteservice.org/v2/directions/driving-car",
-        {
-          method:"POST",
+  });
 
-          headers:{
-            "Authorization":API_KEY,
-            "Content-Type":"application/json"
-          },
+  url += `/${encodeURIComponent(destino)}`;
 
-          body:JSON.stringify({
-            coordinates:coordenadas
-          })
-
-        }
-      );
-
-    if(!response.ok){
-
-      const erro =
-        await response.text();
-
-      console.log(erro);
-
-      throw new Error(
-        "Erro na API de rota"
-      );
-
-    }
-
-    const data =
-      await response.json();
-
-    const rota =
-      data.routes[0]
-      .summary;
-
-    kmTotal =
-      rota.distance / 1000;
-
-    const duracao =
-      rota.duration;
-
-    const horas =
-      Math.floor(
-        duracao / 3600
-      );
-
-    const minutos =
-      Math.floor(
-        (duracao % 3600) / 60
-      );
-
-    valorPedagios =
-      kmTotal * 0.12;
-
-    document.getElementById("distancia")
-    .innerText =
-      kmTotal.toFixed(1) + " km";
-
-    document.getElementById("tempo")
-    .innerText =
-      `${horas}h ${minutos}min`;
-
-    document.getElementById("pedagios")
-    .innerText =
-      moeda(valorPedagios);
-
-    document.getElementById("resumoKm")
-    .innerText =
-      kmTotal.toFixed(1) + " km";
-
-    document.getElementById("resumoPedagio")
-    .innerText =
-      moeda(valorPedagios);
-
-    calcularCustos();
-
-    status.innerText =
-      "Rota calculada";
-
-  }catch(erro){
-
-    console.error(erro);
-
-    status.innerText = "";
-
-    alert(
-      "Erro ao calcular rota.\n\n" +
-      erro.message
-    );
-
-  }
+  window.open(url,"_blank");
 
 }
 
 function calcularCustos(){
+
+  const kmTotal =
+    Number(
+      document.getElementById(
+        "kmManual"
+      ).value
+    ) || 0;
+
+  const pedagios =
+    Number(
+      document.getElementById(
+        "pedagioManual"
+      ).value
+    ) || 0;
 
   const tipoVeiculo =
     Number(
       document.getElementById(
         "tipoVeiculo"
       ).value
-    );
+    ) || 0;
 
   const custoKm =
     kmTotal * tipoVeiculo;
 
-  document.getElementById("valorKm")
-  .innerText =
+  document.getElementById(
+    "resumoKm"
+  ).innerText =
+    kmTotal.toFixed(1) + " km";
+
+  document.getElementById(
+    "resumoValorKm"
+  ).innerText =
     moeda(custoKm);
 
-  document.getElementById("resumoValorKm")
-  .innerText =
-    moeda(custoKm);
+  document.getElementById(
+    "resumoPedagio"
+  ).innerText =
+    moeda(pedagios);
 
   const inicio =
     document.getElementById(
@@ -716,14 +577,20 @@ function calcularCustos(){
 
   }
 
-  document.getElementById("almoco")
-  .value = qtdAlmoco;
+  document.getElementById(
+    "almoco"
+  ).value =
+    qtdAlmoco;
 
-  document.getElementById("jantar")
-  .value = qtdJanta;
+  document.getElementById(
+    "jantar"
+  ).value =
+    qtdJanta;
 
-  document.getElementById("cafe")
-  .value = qtdCafe;
+  document.getElementById(
+    "cafe"
+  ).value =
+    qtdCafe;
 
   const totalAlmoco =
     qtdAlmoco * valorAlmoco;
@@ -754,6 +621,11 @@ function calcularCustos(){
   ).innerText =
     moeda(totalCafe);
 
+  document.getElementById(
+    "resumoAlimentacao"
+  ).innerText =
+    moeda(alimentacao);
+
   const hospedagem =
     Number(
       document.getElementById(
@@ -768,18 +640,6 @@ function calcularCustos(){
       ).value
     ) || 0;
 
-  const total =
-    custoKm +
-    valorPedagios +
-    alimentacao +
-    hospedagem +
-    extra;
-
-  document.getElementById(
-    "resumoAlimentacao"
-  ).innerText =
-    moeda(alimentacao);
-
   document.getElementById(
     "resumoHospedagem"
   ).innerText =
@@ -789,6 +649,13 @@ function calcularCustos(){
     "resumoExtra"
   ).innerText =
     moeda(extra);
+
+  const total =
+    custoKm +
+    pedagios +
+    alimentacao +
+    hospedagem +
+    extra;
 
   document.getElementById(
     "totalDeposito"
@@ -800,9 +667,7 @@ function calcularCustos(){
 [
   "tipoVeiculo",
   "dataInicio",
-  "dataFim",
-  "hospedagem",
-  "valorExtra"
+  "dataFim"
 ]
 .forEach(id=>{
 
@@ -913,4 +778,4 @@ function gerarPDF(){
 </script>
 
 </body>
-  </html>
+</html>
