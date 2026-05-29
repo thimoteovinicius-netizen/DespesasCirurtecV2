@@ -67,10 +67,6 @@ button{
   font-size:15px;
 }
 
-textarea{
-  resize:none;
-}
-
 button{
   border:none;
   cursor:pointer;
@@ -154,17 +150,11 @@ hr{
 
   <label>Nome</label>
 
-  <input
-    id="nome"
-    placeholder="Digite o nome"
-  >
+  <input id="nome">
 
   <label>E-mail</label>
 
-  <input
-    id="email"
-    placeholder="Digite o e-mail"
-  >
+  <input id="email">
 
 </div>
 
@@ -199,7 +189,7 @@ hr{
     </option>
 
     <option value="0.70">
-      Veículo da empresa (R$ 0,70/km)
+      Veículo empresa (R$ 0,70/km)
     </option>
 
   </select>
@@ -214,7 +204,7 @@ hr{
 
   <input
     id="origem"
-    placeholder="Cidade de origem"
+    placeholder="Cidade origem"
   >
 
   <button
@@ -230,7 +220,7 @@ hr{
 
   <input
     id="destino"
-    placeholder="Cidade de destino"
+    placeholder="Cidade destino"
   >
 
   <button
@@ -253,12 +243,12 @@ hr{
     </div>
 
     <div>
-      <strong>Tempo estimado:</strong>
+      <strong>Tempo:</strong>
       <span id="tempo">--</span>
     </div>
 
     <div>
-      <strong>Pedágios estimados:</strong>
+      <strong>Pedágios:</strong>
       <span id="pedagios">R$ 0,00</span>
     </div>
 
@@ -275,26 +265,23 @@ hr{
 
   <h3>Alimentação</h3>
 
-  <label>Almoço (R$ 10 cada)</label>
+  <label>Almoço (R$10)</label>
 
   <input
-    type="number"
     id="almoco"
     readonly
   >
 
-  <label>Jantar (R$ 40 cada)</label>
+  <label>Jantar (R$40)</label>
 
   <input
-    type="number"
     id="jantar"
     readonly
   >
 
-  <label>Café (R$ 10 cada)</label>
+  <label>Café (R$10)</label>
 
   <input
-    type="number"
     id="cafe"
     readonly
   >
@@ -304,8 +291,6 @@ hr{
 <div class="card">
 
   <h3>Hospedagem</h3>
-
-  <label>Valor hospedagem</label>
 
   <input
     type="number"
@@ -321,7 +306,6 @@ hr{
   <input
     type="number"
     id="valorExtra"
-    placeholder="Adicionar valor extra"
   >
 
 </div>
@@ -333,7 +317,7 @@ hr{
   <div class="info">
 
     <div>
-      KM Total:
+      KM:
       <strong id="resumoKm">
         0 km
       </strong>
@@ -401,7 +385,6 @@ hr{
     <div class="total">
 
       Total:
-
       <span id="totalDeposito">
         R$ 0,00
       </span>
@@ -434,7 +417,7 @@ hr{
 <script>
 
 const API_KEY =
-"eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjEyYjBmZTIwNGU5MjQ3ZmI5ODdjOTNhZGQ2YWIyY2U5IiwiaCI6Im11cm11cjY0In0=";
+"SUA_CHAVE_AQUI";
 
 let kmTotal = 0;
 let valorPedagios = 0;
@@ -471,7 +454,7 @@ function addParada(){
     <input
       type="text"
       class="parada"
-      placeholder="Cidade de parada"
+      placeholder="Cidade parada"
     >
 
     <button
@@ -493,14 +476,6 @@ async function buscarCoordenadas(local){
     await fetch(
       `https://api.openrouteservice.org/geocode/search?api_key=${API_KEY}&text=${encodeURIComponent(local)}`
     );
-
-  if(!response.ok){
-
-    throw new Error(
-      "Erro ao buscar localização"
-    );
-
-  }
 
   const data =
     await response.json();
@@ -579,14 +554,13 @@ async function calcularRota(){
 
     const response =
       await fetch(
-        "https://api.openrouteservice.org/v2/directions/driving-car/geojson",
+        "https://api.openrouteservice.org/v2/directions/driving-car",
         {
           method:"POST",
 
           headers:{
             "Authorization":API_KEY,
-            "Accept":"application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8",
-            "Content-Type":"application/json; charset=utf-8"
+            "Content-Type":"application/json"
           },
 
           body:JSON.stringify({
@@ -604,7 +578,7 @@ async function calcularRota(){
       console.log(erro);
 
       throw new Error(
-        "Falha ao consultar rota"
+        "Erro na API de rota"
       );
 
     }
@@ -612,20 +586,9 @@ async function calcularRota(){
     const data =
       await response.json();
 
-    if(
-      !data.features ||
-      !data.features.length
-    ){
-
-      throw new Error(
-        "Nenhuma rota encontrada"
-      );
-
-    }
-
     const rota =
-      data.features[0]
-      .properties.summary;
+      data.routes[0]
+      .summary;
 
     kmTotal =
       rota.distance / 1000;
@@ -669,7 +632,7 @@ async function calcularRota(){
     calcularCustos();
 
     status.innerText =
-      "Rota calculada com sucesso";
+      "Rota calculada";
 
   }catch(erro){
 
@@ -707,12 +670,14 @@ function calcularCustos(){
     moeda(custoKm);
 
   const inicio =
-    document.getElementById("dataInicio")
-    .value;
+    document.getElementById(
+      "dataInicio"
+    ).value;
 
   const fim =
-    document.getElementById("dataFim")
-    .value;
+    document.getElementById(
+      "dataFim"
+    ).value;
 
   let qtdAlmoco = 0;
   let qtdCafe = 0;
@@ -926,7 +891,7 @@ function gerarPDF(){
   const pdf =
     new jsPDF();
 
-  let y = 15;
+  let y = 20;
 
   pdf.setFontSize(16);
 
@@ -972,4 +937,4 @@ function gerarPDF(){
 </script>
 
 </body>
-</html>
+        </html>
